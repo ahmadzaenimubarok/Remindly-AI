@@ -21,12 +21,18 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str
 
-    # OpenAI
+    # AI Provider (OpenRouter untuk dev, OpenAI untuk prod)
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
     OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    AI_MODEL_FAST: str = "meta-llama/llama-3.1-8b-instruct:free"
+    AI_MODEL_QUALITY: str = "meta-llama/llama-3.1-8b-instruct:free"
 
-    # Meta
+    # Meta (Facebook / Messenger)
     META_APP_ID: str = ""
     META_APP_SECRET: str = ""
+    META_VERIFY_TOKEN: str = ""
 
     # TikTok
     TIKTOK_CLIENT_KEY: str = ""
