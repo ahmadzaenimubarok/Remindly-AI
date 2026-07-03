@@ -1,0 +1,11 @@
+backend/.venv/
+backend/venv/
+backend/.env
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.coverage
+**/htmlcov/
+node_modules/
+frontend/dist/
+*.egg-info/
