@@ -12,10 +12,15 @@ export interface ThreadMessage {
 }
 
 export interface ThreadResponse {
+  session_id: string;
   customer_id: string;
   customer_name: string | null;
   platform: string;
   channel_type: string;
+  status: "open" | "closed";
+  is_continuation: boolean;
+  prior_session_id: string | null;
+  prior_session_date: string | null;
   message_count: number;
   has_human_takeover: boolean;
   last_message_at: string;
@@ -27,6 +32,7 @@ export interface ConversationResponse {
   id: string;
   tenant_id: string;
   customer_id: string;
+  session_id: string | null;
   platform: string;
   channel_type: string;
   message_in: string | null;
@@ -43,11 +49,11 @@ type Filter = "all" | "ai" | "human";
 interface InboxStore {
   threads: ThreadResponse[];
   filter: Filter;
-  expanded: string | null; // customer_id yang sedang dibuka
+  expanded: string | null; // session_id yang sedang dibuka
   setThreads: (t: ThreadResponse[]) => void;
   setFilter: (f: Filter) => void;
   setExpanded: (id: string | null) => void;
-  toggleTakeoverInThread: (customerId: string, msgId: string, value: boolean) => void;
+  toggleTakeoverInThread: (sessionId: string, msgId: string, value: boolean) => void;
   // legacy compat
   conversations: ConversationResponse[];
   setConversations: (c: ConversationResponse[]) => void;
@@ -62,10 +68,10 @@ export const useInboxStore = create<InboxStore>((set) => ({
   setFilter: (filter) => set({ filter }),
   setExpanded: (id) =>
     set((state) => ({ expanded: state.expanded === id ? null : id })),
-  toggleTakeoverInThread: (customerId, msgId, value) =>
+  toggleTakeoverInThread: (sessionId, msgId, value) =>
     set((state) => ({
       threads: state.threads.map((t) =>
-        t.customer_id === customerId
+        t.session_id === sessionId
           ? {
               ...t,
               has_human_takeover: value || t.messages.some((m) => m.id !== msgId && m.is_human_takeover),

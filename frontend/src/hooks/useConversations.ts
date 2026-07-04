@@ -22,15 +22,15 @@ export function useConversations() {
     return () => clearInterval(timer);
   }, [filter, setThreads]);
 
-  async function handleToggle(customerId: string, msgId: string, currentValue: boolean) {
+  async function handleToggle(sessionId: string, msgId: string, currentValue: boolean) {
     const newValue = !currentValue;
-    toggleTakeoverInThread(customerId, msgId, newValue);
+    toggleTakeoverInThread(sessionId, msgId, newValue);
     try {
       await api.patch(`/conversations/${msgId}/takeover`, {
         is_human_takeover: newValue,
       });
     } catch {
-      toggleTakeoverInThread(customerId, msgId, currentValue);
+      toggleTakeoverInThread(sessionId, msgId, currentValue);
     }
   }
 

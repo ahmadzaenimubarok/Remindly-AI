@@ -48,12 +48,12 @@ function formatTime(iso: string) {
 
 function MessageRow({
   msg,
-  customerId,
+  sessionId,
   onToggle,
 }: {
   msg: ThreadMessage;
-  customerId: string;
-  onToggle: (customerId: string, msgId: string, current: boolean) => void;
+  sessionId: string;
+  onToggle: (sessionId: string, msgId: string, current: boolean) => void;
 }) {
   return (
     <div
@@ -99,7 +99,7 @@ function MessageRow({
             </Badge>
           )}
           <button
-            onClick={() => onToggle(customerId, msg.id, msg.is_human_takeover)}
+            onClick={() => onToggle(sessionId, msg.id, msg.is_human_takeover)}
             aria-label="Toggle human takeover"
             className={[
               "rounded-md px-2.5 py-1 text-xs font-semibold border transition-colors",
@@ -191,12 +191,12 @@ export default function Inbox() {
           )}
 
           {threads.map((thread) => {
-            const isOpen = expanded === thread.customer_id;
+            const isOpen = expanded === thread.session_id;
             const displayName = thread.customer_name ?? "Pengguna tanpa nama";
 
             return (
               <div
-                key={thread.customer_id}
+                key={thread.session_id}
                 className={[
                   "rounded-lg border bg-white shadow-sm overflow-hidden",
                   thread.has_human_takeover
@@ -207,17 +207,31 @@ export default function Inbox() {
                 {/* Thread header — klik untuk expand */}
                 <button
                   className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors text-left"
-                  onClick={() => setExpanded(thread.customer_id)}
+                  onClick={() => setExpanded(thread.session_id)}
                 >
                   <div className="flex items-center gap-3">
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm">
                       {PLATFORM_ICON[thread.platform] ?? "💬"}
                     </div>
                     <div className="flex flex-col gap-0.5">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-semibold text-slate-900">
                           {displayName}
                         </span>
+                        {thread.is_continuation && thread.prior_session_date && (
+                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 border border-blue-200">
+                            Lanjutan dari sesi{" "}
+                            {new Date(thread.prior_session_date).toLocaleDateString("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                            })}
+                          </span>
+                        )}
+                        {thread.status === "closed" && (
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500 border border-slate-200">
+                            Selesai
+                          </span>
+                        )}
                         {thread.has_human_takeover && (
                           <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold text-white">
                             ⚠ Human
@@ -254,7 +268,7 @@ export default function Inbox() {
                       <MessageRow
                         key={msg.id}
                         msg={msg}
-                        customerId={thread.customer_id}
+                        sessionId={thread.session_id}
                         onToggle={handleToggle}
                       />
                     ))}
