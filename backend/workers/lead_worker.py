@@ -27,7 +27,7 @@ def classify_lead(self, tenant_id: str, customer_id: str) -> None:
         from app.core.feature_flags import FeatureStatus, check_feature_status
         from app.services.lead_service import upsert_lead
 
-        import app.models.user  # noqa: F401 — register User mapper
+        import app.models  # noqa: F401 — register semua mapper
 
         _settings = get_settings()
         _engine = create_async_engine(_settings.DATABASE_URL, poolclass=NullPool)

@@ -31,7 +31,7 @@ def process_facebook_event(self, tenant_id: str, event: dict) -> None:
             process_messenger_message,
         )
 
-        import app.models.user  # noqa: F401 — register User mapper sebelum Tenant dikonfigurasi
+        import app.models  # noqa: F401 — register semua mapper
 
         # NullPool: hindari reuse connection pool antar fork (asyncio loop berbeda)
         _settings = get_settings()

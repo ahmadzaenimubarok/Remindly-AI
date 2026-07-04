@@ -39,7 +39,11 @@ async def send_messenger_reply(page_token: str, recipient_id: str, message: str)
                     "messaging_type": "RESPONSE",
                 },
             )
-            response.raise_for_status()
+            if not response.is_success:
+                logger.error(
+                    f"send_messenger_reply failed status={response.status_code} body={response.text!r}"
+                )
+                return False
             logger.info("Messenger reply sent", extra={"recipient_id": recipient_id})
             return True
     except Exception:
