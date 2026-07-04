@@ -1,4 +1,3 @@
-import { FeatureGate } from "@/components/FeatureGate";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -59,7 +58,6 @@ export default function Inbox() {
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-6">
-        <FeatureGate feature="facebook_engagement">
           <div className="mb-4 flex gap-2">
             {(["all", "ai", "human"] as const).map((f) => (
               <Button
@@ -172,7 +170,6 @@ export default function Inbox() {
               </TableBody>
             </Table>
           </div>
-        </FeatureGate>
       </main>
     </div>
   );
