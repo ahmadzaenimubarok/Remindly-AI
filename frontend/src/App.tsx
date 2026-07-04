@@ -5,6 +5,7 @@ import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import Login from "@/pages/Login";
 import Inbox from "@/pages/Inbox";
+import Leads from "@/pages/Leads";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoading, isAuthenticated } = useAuth();
@@ -31,6 +32,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Inbox />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/leads"
+        element={
+          <ProtectedRoute>
+            <Leads />
           </ProtectedRoute>
         }
       />

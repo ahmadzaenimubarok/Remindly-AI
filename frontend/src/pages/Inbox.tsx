@@ -56,14 +56,22 @@ export default function Inbox() {
             </span>
           )}
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={logout}
-          className="text-slate-500 hover:text-slate-900"
-        >
-          Keluar
-        </Button>
+        <div className="flex items-center gap-3">
+          <a
+            href="/leads"
+            className="text-xs text-slate-500 hover:text-slate-900 transition-colors"
+          >
+            Leads
+          </a>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={logout}
+            className="text-slate-500 hover:text-slate-900"
+          >
+            Keluar
+          </Button>
+        </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-6 py-6">
