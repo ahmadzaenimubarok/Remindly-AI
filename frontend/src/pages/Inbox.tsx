@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { useConversations } from "@/hooks/useConversations";
 import { useInboxStore, type ThreadMessage } from "@/store/inbox";
@@ -99,12 +98,18 @@ function MessageRow({
               {msg.sentiment}
             </Badge>
           )}
-          <Switch
-            checked={msg.is_human_takeover}
-            onCheckedChange={() => onToggle(customerId, msg.id, msg.is_human_takeover)}
+          <button
+            onClick={() => onToggle(customerId, msg.id, msg.is_human_takeover)}
             aria-label="Toggle human takeover"
-            className={msg.is_human_takeover ? "data-[state=checked]:bg-red-500" : ""}
-          />
+            className={[
+              "rounded-md px-2.5 py-1 text-xs font-semibold border transition-colors",
+              msg.is_human_takeover
+                ? "bg-red-500 text-white border-red-500 hover:bg-red-600"
+                : "bg-white text-slate-500 border-slate-300 hover:border-slate-400 hover:text-slate-700",
+            ].join(" ")}
+          >
+            {msg.is_human_takeover ? "⚠ Human" : "AI"}
+          </button>
         </div>
       </div>
     </div>
