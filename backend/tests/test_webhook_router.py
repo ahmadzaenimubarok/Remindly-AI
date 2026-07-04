@@ -9,8 +9,13 @@ from app.core.config import get_settings
 
 @pytest.fixture
 def client():
-    with TestClient(app, raise_server_exceptions=False) as c:
-        yield c
+    # Disable signature validation di test — META_APP_SECRET tidak diset di test env
+    with patch("app.routers.webhooks.get_settings") as mock_settings:
+        s = get_settings()
+        s.META_APP_SECRET = None
+        mock_settings.return_value = s
+        with TestClient(app, raise_server_exceptions=False) as c:
+            yield c
 
 
 def test_facebook_verify_success(client):
