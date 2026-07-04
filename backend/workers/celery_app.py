@@ -13,6 +13,7 @@ celery_app = Celery(
         "workers.content_worker",
         "workers.engagement_worker",
         "workers.conversion_worker",
+        "workers.lead_worker",
     ],
 )
 
@@ -30,5 +31,12 @@ celery_app.conf.update(
         "workers.content_worker.*": {"queue": "content"},
         "workers.engagement_worker.*": {"queue": "engagement"},
         "workers.conversion_worker.*": {"queue": "conversion"},
+        "workers.lead_worker.*": {"queue": "leads"},
+    },
+    beat_schedule={
+        "decay-leads-daily": {
+            "task": "workers.lead_worker.decay_leads",
+            "schedule": 86400,  # setiap 24 jam
+        },
     },
 )

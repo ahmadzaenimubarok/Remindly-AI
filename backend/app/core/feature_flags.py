@@ -32,12 +32,13 @@ PLAN_FEATURES: dict[str, list[str]] = {
         "product_discovery",
         "sales_conversion",
         "analytics",
+        "lead_classification",
     ],
     "enterprise": ["*"],
 }
 
 # Fitur yang tidak butuh credential platform
-CREDENTIAL_FREE_FEATURES = {"analytics", "product_discovery"}
+CREDENTIAL_FREE_FEATURES = {"analytics", "product_discovery", "lead_classification"}
 
 
 async def _get_tenant(tenant_id: str, db: AsyncSession) -> Tenant | None:

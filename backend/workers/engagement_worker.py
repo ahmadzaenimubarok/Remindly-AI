@@ -22,7 +22,7 @@ def process_facebook_event(self, tenant_id: str, event: dict) -> None:
     """
     channel_type = event.get("channel_type", "comment")
 
-    async def _run() -> None:
+    async def _run() -> str | None:
         from sqlalchemy.pool import NullPool
         from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
         from app.core.config import get_settings
@@ -38,27 +38,33 @@ def process_facebook_event(self, tenant_id: str, event: dict) -> None:
         _engine = create_async_engine(_settings.DATABASE_URL, poolclass=NullPool)
         _Session = async_sessionmaker(_engine, class_=AsyncSession, expire_on_commit=False)
 
+        customer_id: str | None = None
         try:
             async with _Session() as session:
                 async with session.begin():
                     if channel_type == "comment":
-                        await process_facebook_comment(tenant_id, event, session)
+                        customer_id = await process_facebook_comment(tenant_id, event, session)
                     elif channel_type == "dm":
-                        await process_messenger_message(tenant_id, event, session)
+                        customer_id = await process_messenger_message(tenant_id, event, session)
                     else:
                         logger.warning(
                             "Unknown channel_type",
                             extra={"channel_type": channel_type, "tenant_id": tenant_id},
                         )
+            # classify_lead dipanggil SETELAH session.begin() selesai (commit sudah terjadi)
+            return customer_id
         finally:
             await _engine.dispose()
 
     try:
-        asyncio.run(_run())
+        customer_id = asyncio.run(_run())
         logger.info(
             "Facebook event processed",
             extra={"tenant_id": tenant_id, "channel_type": channel_type},
         )
+        if customer_id is not None:
+            from workers.lead_worker import classify_lead
+            classify_lead.delay(tenant_id, customer_id)
     except Exception as exc:
         logger.error(
             "process_facebook_event failed",

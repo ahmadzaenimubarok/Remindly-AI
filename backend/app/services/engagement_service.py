@@ -108,7 +108,7 @@ async def _save_system_log(
 
 async def process_facebook_comment(
     tenant_id: str, event: dict, db: AsyncSession
-) -> None:
+) -> str | None:
     """
     Proses event komentar Facebook untuk satu tenant.
     event keys: comment_id, message, from_id, from_name, post_id
@@ -122,12 +122,12 @@ async def process_facebook_comment(
     status = await check_feature_status(tenant_id, "facebook_reply", db)
     if status != FeatureStatus.ACTIVE:
         await log_skip(tenant_id, "facebook_reply", status)
-        return
+        return None
 
     tenant = await _get_tenant(tenant_id, db)
     if tenant is None:
         logger.error("Tenant not found", extra={"tenant_id": tenant_id})
-        return
+        return None
 
     credential = await _get_facebook_credential(tenant_id, db)
     if credential is None or credential.is_expired():
@@ -135,14 +135,14 @@ async def process_facebook_comment(
             tenant_id, "comment_reply", "skipped",
             {"reason": "no_credential", "comment_id": comment_id}, db,
         )
-        return
+        return None
 
     # Dedup: skip jika sudah pernah diproses
     existing = await _get_conversation_by_platform_id(tenant_id, comment_id, db)
     if existing is not None:
         if existing.is_human_takeover:
             logger.info("Skipping — human takeover active", extra={"comment_id": comment_id})
-        return
+        return None
 
     customer = await _get_or_create_customer(tenant_id, from_id, "facebook", from_name, db)
 
@@ -181,7 +181,7 @@ async def process_facebook_comment(
             "Conversation escalated to human",
             extra={"tenant_id": tenant_id, "reason": escalation_reason},
         )
-        return
+        return str(customer.id)
 
     tone = tenant.ai_config.get("tone", "casual")
     reply = await generate_reply(message, product_context, tone)
@@ -205,11 +205,12 @@ async def process_facebook_comment(
         tenant_id, "comment_reply", "success" if sent else "failed",
         {"comment_id": comment_id, "sent": sent}, db,
     )
+    return str(customer.id)
 
 
 async def process_messenger_message(
     tenant_id: str, event: dict, db: AsyncSession
-) -> None:
+) -> str | None:
     """
     Proses event Messenger DM untuk satu tenant.
     event keys: message_id, message, sender_id
@@ -221,11 +222,11 @@ async def process_messenger_message(
     status = await check_feature_status(tenant_id, "facebook_reply", db)
     if status != FeatureStatus.ACTIVE:
         await log_skip(tenant_id, "facebook_reply", status)
-        return
+        return None
 
     tenant = await _get_tenant(tenant_id, db)
     if tenant is None:
-        return
+        return None
 
     credential = await _get_facebook_credential(tenant_id, db)
     if credential is None or credential.is_expired():
@@ -233,13 +234,11 @@ async def process_messenger_message(
             tenant_id, "messenger_reply", "skipped",
             {"reason": "no_credential", "message_id": message_id}, db,
         )
-        return
+        return None
 
     existing = await _get_conversation_by_platform_id(tenant_id, message_id, db)
     if existing is not None:
-        if existing.is_human_takeover:
-            return
-        return
+        return None
 
     customer = await _get_or_create_customer(tenant_id, sender_id, "messenger", None, db)
 
@@ -272,7 +271,7 @@ async def process_messenger_message(
             tenant_id, "messenger_escalated", "success",
             {"message_id": message_id, "reason": escalation_reason}, db,
         )
-        return
+        return str(customer.id)
 
     tone = tenant.ai_config.get("tone", "casual")
     reply = await generate_reply(message, product_context, tone)
@@ -296,3 +295,4 @@ async def process_messenger_message(
         tenant_id, "messenger_reply", "success" if sent else "failed",
         {"message_id": message_id, "sent": sent}, db,
     )
+    return str(customer.id)
