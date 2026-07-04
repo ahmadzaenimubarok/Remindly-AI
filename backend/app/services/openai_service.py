@@ -26,6 +26,13 @@ Gunakan HANYA informasi dari konteks produk yang diberikan — jangan membuat kl
 Jika informasi tidak tersedia di konteks, katakan kamu akan cek dulu.
 Balas dalam bahasa Indonesia yang natural, singkat (maks 3 kalimat), dan tidak berlebihan."""
 
+CONTINUATION_SYSTEM_PROMPT = """Kamu adalah asisten yang menentukan apakah pesan baru dari customer berkaitan dengan percakapan sebelumnya.
+
+Kembalikan HANYA JSON valid: {"is_continuation": true} atau {"is_continuation": false}
+
+Jawab true jika pesan baru membahas topik yang sama, merujuk pesanan/produk yang sama, atau merupakan kelanjutan logis dari percakapan sebelumnya.
+Jawab false jika pesan baru adalah topik baru yang tidak berkaitan."""
+
 
 @dataclass
 class IntentResult:
@@ -79,19 +86,20 @@ async def classify_intent(message: str, tenant_context: str) -> IntentResult:
         return IntentResult(intent="tanya_info", sentiment="neutral", confidence=0.0)
 
 
-async def generate_reply(message: str, context: str, tone: str) -> str:
+async def generate_reply(
+    message: str, context: str, tone: str, prior_context: str | None = None
+) -> str:
     settings = get_settings()
     client = get_llm_client()
     try:
         system = REPLY_SYSTEM_PROMPT.format(tone=tone)
+        prior_section = f"\nKonteks percakapan sebelumnya:\n{prior_context}\n" if prior_context else ""
+        user_content = f"Konteks produk:\n{context}{prior_section}\n\nPesan customer:\n{message}"
         response = await client.chat.completions.create(
             model=settings.AI_MODEL_FAST,
             messages=[
                 {"role": "system", "content": system},
-                {
-                    "role": "user",
-                    "content": f"Konteks produk:\n{context}\n\nPesan customer:\n{message}",
-                },
+                {"role": "user", "content": user_content},
             ],
             temperature=0.7,
             max_tokens=300,
@@ -100,3 +108,25 @@ async def generate_reply(message: str, context: str, tone: str) -> str:
     except Exception:
         logger.exception("generate_reply error")
         return FALLBACK_REPLY
+
+
+async def check_continuation(new_message: str, prior_messages: list[str]) -> bool:
+    """True jika new_message adalah lanjutan dari prior_messages. Default False jika error."""
+    client = get_llm_client()
+    settings = get_settings()
+    try:
+        prior_text = "\n".join(f"- {m}" for m in prior_messages if m)
+        response = await client.chat.completions.create(
+            model=settings.AI_MODEL_FAST,
+            messages=[
+                {"role": "system", "content": CONTINUATION_SYSTEM_PROMPT},
+                {"role": "user", "content": f"Pesan sebelumnya:\n{prior_text}\n\nPesan baru: {new_message}"},
+            ],
+            temperature=0.0,
+            max_tokens=20,
+        )
+        raw = response.choices[0].message.content or ""
+        return bool(json.loads(raw.strip()).get("is_continuation", False))
+    except Exception:
+        logger.exception("check_continuation error — defaulting to False")
+        return False

@@ -1,5 +1,6 @@
 import logging
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,14 +9,23 @@ from app.core.feature_flags import FeatureStatus, check_feature_status, log_skip
 from app.core.security import decrypt_credential
 from app.models.conversation import Conversation
 from app.models.customer import Customer
+from app.models.session import Session
 from app.models.system_log import SystemLog
 from app.models.tenant import Tenant
 from app.models.tenant_credential import TenantCredential
 from app.services.facebook_service import get_messenger_user_name, send_comment_reply, send_messenger_reply
-from app.services.openai_service import IntentResult, classify_intent, generate_reply
+from app.services.openai_service import IntentResult, check_continuation, classify_intent, generate_reply
 from app.services.rag_service import get_product_context
 
 logger = logging.getLogger(__name__)
+
+FAREWELL_KEYWORDS: frozenset[str] = frozenset({
+    "terima kasih", "terimakasih", "makasih", "trims",
+    "sampai jumpa", "dadah", "selesai", "oke deh", "oke thanks",
+    "ok thanks", "thanks", "thank you", "bye", "goodbye", "done",
+})
+
+FAREWELL_INTENTS: frozenset[str] = frozenset({"spam"})
 
 
 async def _get_tenant(tenant_id: str, db: AsyncSession) -> Tenant | None:
@@ -108,6 +118,117 @@ async def _save_system_log(
     db.add(log)
 
 
+def _is_closing_signal(
+    message_in: str | None,
+    message_out: str | None,
+    intent: str | None,
+) -> bool:
+    """True jika percakapan ini menandakan sesi selesai."""
+    if intent in FAREWELL_INTENTS:
+        return True
+    for text in (message_in, message_out):
+        if text and any(kw in text.lower() for kw in FAREWELL_KEYWORDS):
+            return True
+    return False
+
+
+async def _get_open_session(
+    tenant_id: str,
+    customer_id: uuid.UUID,
+    platform: str,
+    channel_type: str,
+    db: AsyncSession,
+) -> Session | None:
+    result = await db.execute(
+        select(Session).where(
+            Session.tenant_id == uuid.UUID(tenant_id),
+            Session.customer_id == customer_id,
+            Session.platform == platform,
+            Session.channel_type == channel_type,
+            Session.status == "open",
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def _get_last_closed_session_messages(
+    tenant_id: str,
+    customer_id: uuid.UUID,
+    platform: str,
+    channel_type: str,
+    db: AsyncSession,
+) -> tuple[Session | None, list[str]]:
+    sess_result = await db.execute(
+        select(Session).where(
+            Session.tenant_id == uuid.UUID(tenant_id),
+            Session.customer_id == customer_id,
+            Session.platform == platform,
+            Session.channel_type == channel_type,
+            Session.status == "closed",
+        ).order_by(Session.closed_at.desc()).limit(1)
+    )
+    last_session = sess_result.scalar_one_or_none()
+    if last_session is None:
+        return None, []
+
+    msg_result = await db.execute(
+        select(Conversation).where(
+            Conversation.tenant_id == uuid.UUID(tenant_id),
+            Conversation.session_id == last_session.id,
+            Conversation.message_in.isnot(None),
+        ).order_by(Conversation.created_at.desc()).limit(5)
+    )
+    msgs = msg_result.scalars().all()
+    return last_session, [m.message_in for m in reversed(msgs) if m.message_in]
+
+
+async def _get_or_create_session(
+    tenant_id: str,
+    customer_id: uuid.UUID,
+    platform: str,
+    channel_type: str,
+    message_in: str,
+    db: AsyncSession,
+) -> tuple[Session, list[str]]:
+    """
+    Cari sesi yang masih open, atau buat sesi baru.
+    Kalau semua sesi closed, cek apakah pesan baru adalah lanjutan sesi sebelumnya.
+    Return (session, prior_messages_for_context).
+    """
+    open_session = await _get_open_session(tenant_id, customer_id, platform, channel_type, db)
+    if open_session is not None:
+        return open_session, []
+
+    last_session, prior_texts = await _get_last_closed_session_messages(
+        tenant_id, customer_id, platform, channel_type, db
+    )
+
+    is_continuation = False
+    prior_session_id = None
+    if last_session is not None and prior_texts:
+        is_continuation = await check_continuation(message_in, prior_texts)
+        if is_continuation:
+            prior_session_id = last_session.id
+            logger.info(
+                "Continuation detected",
+                extra={"tenant_id": tenant_id, "customer_id": str(customer_id),
+                       "prior_session_id": str(prior_session_id)},
+            )
+
+    new_session = Session(
+        tenant_id=uuid.UUID(tenant_id),
+        customer_id=customer_id,
+        platform=platform,
+        channel_type=channel_type,
+        status="open",
+        is_continuation=is_continuation,
+        prior_session_id=prior_session_id,
+    )
+    db.add(new_session)
+    await db.flush()
+    return new_session, (prior_texts if is_continuation else [])
+
+
 async def process_facebook_comment(
     tenant_id: str, event: dict, db: AsyncSession
 ) -> str | None:
@@ -147,6 +268,10 @@ async def process_facebook_comment(
         return None
 
     customer = await _get_or_create_customer(tenant_id, from_id, "facebook", from_name, db)
+    session, prior_context_msgs = await _get_or_create_session(
+        tenant_id, customer.id, "facebook", "comment", message, db
+    )
+    prior_context_str = "\n".join(prior_context_msgs) if prior_context_msgs else None
 
     # RAG context
     product_context = await get_product_context(tenant_id, message, db)
@@ -164,6 +289,7 @@ async def process_facebook_comment(
         conv = Conversation(
             tenant_id=uuid.UUID(tenant_id),
             customer_id=customer.id,
+            session_id=session.id,
             platform="facebook",
             channel_type="comment",
             platform_message_id=comment_id,
@@ -186,12 +312,13 @@ async def process_facebook_comment(
         return str(customer.id)
 
     tone = tenant.ai_config.get("tone", "casual")
-    reply = await generate_reply(message, product_context, tone)
+    reply = await generate_reply(message, product_context, tone, prior_context=prior_context_str)
     sent = await send_comment_reply(page_token, comment_id, reply)
 
     conv = Conversation(
         tenant_id=uuid.UUID(tenant_id),
         customer_id=customer.id,
+        session_id=session.id,
         platform="facebook",
         channel_type="comment",
         platform_message_id=comment_id,
@@ -202,6 +329,11 @@ async def process_facebook_comment(
         is_human_takeover=False,
     )
     db.add(conv)
+
+    if _is_closing_signal(message, reply if sent else None, intent_result.intent):
+        session.status = "closed"
+        session.closed_at = datetime.now(timezone.utc)
+        logger.info("Session closed by AI signal", extra={"session_id": str(session.id)})
 
     await _save_system_log(
         tenant_id, "comment_reply", "success" if sent else "failed",
@@ -246,6 +378,11 @@ async def process_messenger_message(
     sender_name = await get_messenger_user_name(page_token, sender_id)
     customer = await _get_or_create_customer(tenant_id, sender_id, "messenger", sender_name, db)
 
+    session, prior_context_msgs = await _get_or_create_session(
+        tenant_id, customer.id, "messenger", "dm", message, db
+    )
+    prior_context_str = "\n".join(prior_context_msgs) if prior_context_msgs else None
+
     product_context = await get_product_context(tenant_id, message, db)
     tenant_context = f"Nama toko: {tenant.name}\n{product_context}"
 
@@ -258,6 +395,7 @@ async def process_messenger_message(
         conv = Conversation(
             tenant_id=uuid.UUID(tenant_id),
             customer_id=customer.id,
+            session_id=session.id,
             platform="messenger",
             channel_type="dm",
             platform_message_id=message_id,
@@ -276,12 +414,13 @@ async def process_messenger_message(
         return str(customer.id)
 
     tone = tenant.ai_config.get("tone", "casual")
-    reply = await generate_reply(message, product_context, tone)
+    reply = await generate_reply(message, product_context, tone, prior_context=prior_context_str)
     sent = await send_messenger_reply(page_token, sender_id, reply)
 
     conv = Conversation(
         tenant_id=uuid.UUID(tenant_id),
         customer_id=customer.id,
+        session_id=session.id,
         platform="messenger",
         channel_type="dm",
         platform_message_id=message_id,
@@ -292,6 +431,11 @@ async def process_messenger_message(
         is_human_takeover=False,
     )
     db.add(conv)
+
+    if _is_closing_signal(message, reply if sent else None, intent_result.intent):
+        session.status = "closed"
+        session.closed_at = datetime.now(timezone.utc)
+        logger.info("Session closed by AI signal", extra={"session_id": str(session.id)})
 
     await _save_system_log(
         tenant_id, "messenger_reply", "success" if sent else "failed",

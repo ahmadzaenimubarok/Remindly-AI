@@ -6,3 +6,4 @@ from app.models.tenant_credential import TenantCredential  # noqa: F401
 from app.models.product import Product  # noqa: F401
 from app.models.system_log import SystemLog  # noqa: F401
 from app.models.lead import Lead  # noqa: F401
+from app.models.session import Session  # noqa: F401
