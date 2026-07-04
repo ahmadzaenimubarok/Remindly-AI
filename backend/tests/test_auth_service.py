@@ -92,7 +92,6 @@ async def test_login_success_returns_tokens():
 
     assert response.access_token
     assert response.refresh_token
-    assert response.token_type == "bearer"
 
 
 @pytest.mark.asyncio

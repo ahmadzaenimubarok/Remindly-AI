@@ -10,7 +10,7 @@ from app.core.security import decode_token
 logger = logging.getLogger(__name__)
 
 PUBLIC_PATHS = {"/", "/health", "/docs", "/openapi.json", "/redoc"}
-AUTH_PATHS = {"/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh"}
+AUTH_PATHS = {"/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout", "/api/v1/auth/me"}
 WEBHOOK_PATH_PREFIX = "/webhooks"
 
 

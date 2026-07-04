@@ -42,9 +42,9 @@ def test_register_invalid_email_returns_422(client):
     assert res.json()["code"] == "VALIDATION_ERROR"
 
 
-def test_login_success(client):
-    from app.schemas.auth import TokenResponse
-    mock_tokens = TokenResponse(
+def test_login_success_sets_cookies(client):
+    from app.services.auth_service import TokenPair
+    mock_tokens = TokenPair(
         access_token="access.token.here",
         refresh_token="refresh.token.here",
     )
@@ -57,8 +57,10 @@ def test_login_success(client):
         })
 
     assert res.status_code == 200
-    assert res.json()["data"]["access_token"] == "access.token.here"
     assert res.json()["data"]["token_type"] == "bearer"
+    # Token ada di cookie, bukan di body
+    assert "access_token" not in res.json()["data"]
+    assert "access_token" in res.cookies
 
 
 def test_login_wrong_credentials_returns_401(client):
@@ -78,3 +80,38 @@ def test_protected_endpoint_without_token_returns_401(client):
     res = client.get("/api/v1/some-protected-route")
     assert res.status_code == 401
     assert res.json()["code"] == "UNAUTHORIZED"
+
+
+def test_logout_returns_success(client):
+    res = client.post("/api/v1/auth/logout")
+    assert res.status_code == 200
+    assert res.json()["success"] is True
+
+
+def test_me_without_token_returns_401(client):
+    res = client.get("/api/v1/auth/me")
+    assert res.status_code == 401
+
+
+def test_me_with_valid_token_returns_user_info(client):
+    from app.core.security import create_access_token
+    token = create_access_token({
+        "sub": str(uuid.uuid4()),
+        "tenant_id": str(uuid.uuid4()),
+        "role": "tenant_user",
+    })
+    client.cookies.set("access_token", token)
+    res = client.get("/api/v1/auth/me")
+    client.cookies.clear()
+    assert res.status_code == 200
+    data = res.json()["data"]
+    assert "user_id" in data
+    assert "tenant_id" in data
+    assert data["role"] == "tenant_user"
+
+
+def test_me_with_invalid_token_returns_401(client):
+    client.cookies.set("access_token", "invalid.token.here")
+    res = client.get("/api/v1/auth/me")
+    client.cookies.clear()
+    assert res.status_code == 401

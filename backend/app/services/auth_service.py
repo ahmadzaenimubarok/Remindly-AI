@@ -15,10 +15,18 @@ from app.core.security import (
 )
 from app.models.tenant import Tenant
 from app.models.user import User
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
+from dataclasses import dataclass
+
+from app.schemas.auth import LoginRequest, RegisterRequest  # noqa: F401
 from app.services.tenant_service import provision_tenant
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class TokenPair:
+    access_token: str
+    refresh_token: str
 
 
 def _build_token_payload(user: User) -> dict:
@@ -29,9 +37,9 @@ def _build_token_payload(user: User) -> dict:
     }
 
 
-def _make_token_response(user: User) -> TokenResponse:
+def _make_token_pair(user: User) -> TokenPair:
     payload = _build_token_payload(user)
-    return TokenResponse(
+    return TokenPair(
         access_token=create_access_token(payload),
         refresh_token=create_refresh_token(payload),
     )
@@ -62,7 +70,7 @@ async def register_user(
     return user, tenant
 
 
-async def login_user(body: LoginRequest, db: AsyncSession) -> TokenResponse:
+async def login_user(body: LoginRequest, db: AsyncSession) -> TokenPair:
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
 
@@ -73,12 +81,12 @@ async def login_user(body: LoginRequest, db: AsyncSession) -> TokenResponse:
         raise HTTPException(status_code=403, detail="Akun dinonaktifkan.")
 
     logger.info("User logged in", extra={"user_id": str(user.id)})
-    return _make_token_response(user)
+    return _make_token_pair(user)
 
 
 async def refresh_access_token(
     refresh_token: str, db: AsyncSession
-) -> TokenResponse:
+) -> TokenPair:
     try:
         payload = decode_token(refresh_token)
     except JWTError:
@@ -94,4 +102,4 @@ async def refresh_access_token(
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="User tidak ditemukan atau nonaktif.")
 
-    return _make_token_response(user)
+    return _make_token_pair(user)
