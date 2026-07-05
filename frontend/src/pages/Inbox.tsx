@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
 import { useConversations } from "@/hooks/useConversations";
 import { useInboxStore, type ThreadMessage } from "@/store/inbox";
+import AppLayout from "@/components/AppLayout";
 
 const FILTER_LABELS = { all: "Semua", ai: "AI", human: "Human" } as const;
 
@@ -230,7 +229,6 @@ function MessageRow({
 }
 
 export default function Inbox() {
-  const { logout } = useAuth();
   const { threads, filter, setFilter, expanded, setExpanded } = useInboxStore();
   const { handleToggle, handleSessionToggle } = useConversations();
   const [toast, setToast] = useState<string | null>(null);
@@ -242,50 +240,10 @@ export default function Inbox() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <AppLayout escalatedCount={escalatedCount}>
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
 
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 shadow-sm">
-        <div className="flex items-center gap-3">
-          <img
-            src="/logo.jpeg"
-            alt="Reseller AI"
-            className="h-7 w-7 rounded-full object-cover"
-          />
-          <span className="text-sm font-semibold text-slate-900">Reseller AI — Inbox</span>
-          {escalatedCount > 0 && (
-            <button
-              onClick={() => setFilter("human")}
-              aria-label={`${escalatedCount} percakapan perlu ditangani — klik untuk filter`}
-              className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 hover:bg-red-200 transition-colors"
-            >
-              <span
-                aria-hidden="true"
-                className="h-1.5 w-1.5 rounded-full bg-red-500 inline-block [animation:pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite] motion-reduce:animate-none"
-              />
-              {escalatedCount} perlu ditangani
-            </button>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/leads"
-            className="text-xs text-slate-500 hover:text-slate-900 transition-colors"
-          >
-            Leads
-          </Link>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={logout}
-            className="text-slate-500 hover:text-slate-900"
-          >
-            Keluar
-          </Button>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-4xl px-4 sm:px-6 py-6">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-6">
         {/* Filter bar */}
         <div className="mb-4 flex items-center justify-between">
           <div className="flex gap-2" role="group" aria-label="Filter percakapan">
@@ -446,7 +404,7 @@ export default function Inbox() {
             );
           })}
         </div>
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

@@ -6,6 +6,9 @@ import Terms from "@/pages/Terms";
 import Login from "@/pages/Login";
 import Inbox from "@/pages/Inbox";
 import Leads from "@/pages/Leads";
+import Products from "@/pages/Products";
+import Settings from "@/pages/Settings";
+import Billing from "@/pages/Billing";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoading, isAuthenticated } = useAuth();
@@ -40,6 +43,30 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Leads />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/products"
+        element={
+          <ProtectedRoute>
+            <Products />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/billing"
+        element={
+          <ProtectedRoute>
+            <Billing />
           </ProtectedRoute>
         }
       />

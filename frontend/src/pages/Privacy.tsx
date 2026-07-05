@@ -10,7 +10,7 @@ export default function Privacy() {
       <header className="border-b border-slate-100 px-6 py-4">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <Link to="/" className="text-sm font-semibold tracking-tight hover:text-slate-600">
-            Reseller AI
+            Remindly AI
           </Link>
           <Link to="/terms" className="text-xs text-slate-400 hover:text-slate-700">
             Terms of Service
@@ -26,7 +26,7 @@ export default function Privacy() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-slate-900">1. Tentang Platform Ini</h2>
             <p>
-              Reseller AI (<code className="text-xs bg-slate-100 px-1 rounded">{DOMAIN}</code>) adalah platform SaaS yang
+              Remindly AI (<code className="text-xs bg-slate-100 px-1 rounded">{DOMAIN}</code>) adalah platform SaaS yang
               membantu reseller Indonesia mengotomatisasi penemuan produk, pembuatan konten, dan engagement media sosial
               menggunakan kecerdasan buatan. Kebijakan privasi ini menjelaskan data apa yang kami kumpulkan, bagaimana
               kami menggunakannya, dan hak-hak Anda sebagai pengguna.
@@ -151,7 +151,7 @@ export default function Privacy() {
 
       <footer className="border-t border-slate-100 px-6 py-6">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <span className="text-xs text-slate-400">© 2026 Reseller AI</span>
+          <span className="text-xs text-slate-400">© 2026 Remindly AI</span>
           <div className="flex gap-4 text-xs text-slate-400">
             <Link to="/" className="hover:text-slate-700">Beranda</Link>
             <Link to="/terms" className="hover:text-slate-700">Terms of Service</Link>

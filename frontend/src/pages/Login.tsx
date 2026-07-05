@@ -35,7 +35,7 @@ export default function Login() {
       <Card className="w-full max-w-sm border border-slate-200 shadow-sm">
         <CardHeader className="pb-4">
           <div className="flex flex-col items-center gap-3 mb-2">
-            <img src="/logo.jpeg" alt="Reseller AI" className="h-12 w-12 rounded-full object-cover" />
+            <img src="/logo.jpeg" alt="Remindly AI" className="h-12 w-12 rounded-full object-cover" />
           </div>
           <CardTitle className="text-lg font-semibold text-slate-900 text-center">
             Masuk ke Dashboard

@@ -1,8 +1,8 @@
 # Software Design Document (SDD)
-## AI-Powered SaaS Dashboard — Reseller Automation Platform
+## AI-Powered SaaS Dashboard — Remindly AI Platform
 
-**Versi:** 2.7
-**Tanggal:** 4 Juli 2026
+**Versi:** 2.8
+**Tanggal:** 5 Juli 2026
 **Status:** Draft
 
 ---
@@ -17,7 +17,7 @@
 ### 0.1 Identitas Proyek
 
 ```
-Nama proyek  : reseller-ai
+Nama proyek  : remindly-ai
 Backend      : FastAPI (Python 3.12)
 Frontend     : React 18 + Vite + Tailwind CSS + shadcn/ui
 Database     : PostgreSQL 16 + pgvector
@@ -55,14 +55,50 @@ FASE 2 — ENGINE DASAR ✅ SELESAI (2026-07-04)
   - Celery worker wajib dijalankan dengan -Q celery,engagement,discovery,content,conversion
   - facebook_service.py menggunakan httpx.Client (sync) bukan AsyncClient — menghindari event loop conflict di Celery fork worker
 
-FASE 3 — LEAD INTELLIGENCE
-  [ ] Lead classification: hot / warm / cold dari percakapan masuk
-  [ ] Dashboard: Leads page (daftar lead + status klasifikasi + filter)
+FASE 3 — LEAD INTELLIGENCE ✅ SELESAI (2026-07-04)
+  [x] Lead classification: hot / warm / cold dari percakapan masuk
+  [x] Dashboard: Leads page (kartu per lead, heat bar, sinyal, summary bar)
 
 FASE 4 — SAAS LAYER
-  [ ] Subscription & billing (Midtrans/Stripe webhook)
-  [ ] Usage metering + quota enforcement
-  [ ] Super Admin panel
+  FASE 4a — Onboarding Tenant ✅ SELESAI (2026-07-05)
+    [x] Product management: CRUD /products per tenant
+    [x] Settings page: connect Facebook Page via UI (simpan token)
+    Catatan:
+    - Bug nested transaction (async with db.begin()) sudah difix di semua router
+    - Bug TS unused import (useInboxStore, Button) sudah difix
+
+  FASE 4b — Subscription & Billing ✅ SELESAI (2026-07-05)
+    [x] Plan model: free / starter / pro / enterprise
+    [x] Stripe Checkout: buat session → redirect → webhook konfirmasi
+    [x] Plan change via Subscription.modify (bukan Checkout baru):
+        - Upgrade → proration_behavior='always_invoice' (bayar selisih prorata)
+        - Downgrade → proration_behavior='none' (aktif di renewal berikutnya)
+        - Cancel pending downgrade → tombol "Batalkan Downgrade" di UI
+    [x] Webhook events: checkout.session.completed, invoice.paid,
+        customer.subscription.updated, customer.subscription.deleted
+    [x] UI: kartu plan 4 kolom (Free/Starter/Pro/Enterprise), badge Aktif/Dijadwalkan,
+        banner amber untuk pending downgrade
+    [x] Seeder DB: scripts/seed.py (tenant demo + user + produk + percakapan)
+    [x] Seeder Stripe: scripts/seed_stripe.py (Products + Prices, idempotent,
+        auto-update PLAN_PRICES di billing_service.py)
+    Catatan:
+    - Stripe IDR: amount dalam sen (× 100), bukan zero-decimal
+    - StripeObject tidak punya .get() — selalu to_dict() sebelum akses field
+    - current_period_end kosong di billing_mode=flexible → fallback billing_cycle_anchor
+    - App direname: Reseller AI → Remindly AI (semua file UI, backend, seed)
+    - stripe_subscription_id + pending_plan + pending_plan_date ditambah ke Tenant model
+    - Migration: 6854d88a1a66_add_subscription_fields_to_tenants
+    [ ] Invoice & notifikasi email (Resend) — belum diimplementasi
+
+  FASE 4c — Usage Metering & Quota
+    [ ] Hitung AI calls + conversations per tenant per billing period
+    [ ] Quota enforcement: block/degrade kalau habis
+    [ ] Usage indicator di dashboard tenant
+
+  FASE 4d — Super Admin & Observability
+    [ ] Super Admin panel: list tenant, usage, health sistem
+    [ ] WebSocket untuk Inbox (ganti polling 10 detik)
+    [ ] Monitoring dasar (error rate, queue depth)
 ```
 
 ---

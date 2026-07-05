@@ -10,7 +10,7 @@ from app.middleware.error_handler import (
 )
 from app.middleware.rate_limiter import RateLimiterMiddleware
 from app.middleware.tenant_context import TenantContextMiddleware
-from app.routers import auth, conversations, features, leads, webhooks
+from app.routers import auth, billing, conversations, features, leads, products, settings, webhooks
 
 logging.basicConfig(
     level=logging.INFO,
@@ -18,7 +18,7 @@ logging.basicConfig(
 )
 
 app = FastAPI(
-    title="Reseller AI",
+    title="Remindly AI",
     version="0.1.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -41,10 +41,13 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 # Routers
 app.include_router(auth.router)
+app.include_router(billing.router)
 app.include_router(webhooks.router)
 app.include_router(conversations.router)
 app.include_router(features.router)
 app.include_router(leads.router)
+app.include_router(products.router)
+app.include_router(settings.router)
 
 
 @app.get("/health")

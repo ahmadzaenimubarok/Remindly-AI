@@ -1,7 +1,5 @@
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
 import { useLeads, type LeadResponse } from "@/hooks/useLeads";
+import AppLayout from "@/components/AppLayout";
 
 const TIER_CONFIG = {
   hot: {
@@ -189,7 +187,6 @@ const STATUS_TABS = [
 ] as const;
 
 export default function Leads() {
-  const { logout } = useAuth();
   const {
     leads,
     loading,
@@ -205,49 +202,8 @@ export default function Leads() {
   const warmCount = leads.filter((l) => l.tier === "warm" && l.status === "active").length;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6 py-3 shadow-sm">
-        <div className="flex items-center gap-3 min-w-0">
-          <img
-            src="/logo.jpeg"
-            alt="Reseller AI"
-            className="h-7 w-7 rounded-full object-cover shrink-0"
-          />
-          <span className="text-sm font-semibold text-slate-900 truncate">
-            Reseller AI — Leads
-          </span>
-          {hotCount > 0 && (
-            <span
-              aria-label={`${hotCount} prospek panas`}
-              className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 shrink-0"
-            >
-              <span
-                aria-hidden="true"
-                className="h-1.5 w-1.5 rounded-full bg-red-500 inline-block [animation:pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite] motion-reduce:animate-none"
-              />
-              {hotCount} panas
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <Link
-            to="/inbox"
-            className="text-xs text-slate-500 hover:text-slate-900 transition-colors"
-          >
-            Inbox
-          </Link>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={logout}
-            className="text-slate-500 hover:text-slate-900"
-          >
-            Keluar
-          </Button>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
+    <AppLayout>
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
         {/* Summary bar — stacks on mobile */}
         {statusFilter === "active" && (hotCount > 0 || warmCount > 0) && (
           <div className="mb-6 flex flex-col sm:flex-row gap-3">
@@ -377,7 +333,7 @@ export default function Leads() {
             ))}
           </div>
         )}
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 }

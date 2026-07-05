@@ -9,6 +9,7 @@ from app.core.config import get_settings
 logger = logging.getLogger(__name__)
 
 FALLBACK_REPLY = "Halo! Terima kasih sudah menghubungi kami. Tim kami akan segera membalas pesanmu ya 🙏"
+NO_PRODUCT_REPLY = "Halo! Terima kasih sudah bertanya. Saat ini kami belum punya info produk yang tersedia — tim kami akan segera follow up ya 🙏"
 
 INTENT_SYSTEM_PROMPT = """Kamu adalah classifier intent untuk customer service toko online Indonesia.
 Klasifikasikan pesan customer ke salah satu intent berikut:
@@ -89,6 +90,8 @@ async def classify_intent(message: str, tenant_context: str) -> IntentResult:
 async def generate_reply(
     message: str, context: str, tone: str, prior_context: str | None = None
 ) -> str:
+    if not context or not context.strip():
+        return NO_PRODUCT_REPLY
     settings = get_settings()
     client = get_llm_client()
     try:

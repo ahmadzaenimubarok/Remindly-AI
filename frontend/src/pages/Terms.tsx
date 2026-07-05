@@ -9,7 +9,7 @@ export default function Terms() {
       <header className="border-b border-slate-100 px-6 py-4">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <Link to="/" className="text-sm font-semibold tracking-tight hover:text-slate-600">
-            Reseller AI
+            Remindly AI
           </Link>
           <Link to="/privacy" className="text-xs text-slate-400 hover:text-slate-700">
             Privacy Policy
@@ -25,7 +25,7 @@ export default function Terms() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-slate-900">1. Penerimaan Syarat</h2>
             <p>
-              Dengan mendaftar atau menggunakan platform Reseller AI, Anda menyatakan bahwa Anda telah membaca,
+              Dengan mendaftar atau menggunakan platform Remindly AI, Anda menyatakan bahwa Anda telah membaca,
               memahami, dan menyetujui Syarat Penggunaan ini. Jika Anda tidak setuju, jangan gunakan layanan ini.
             </p>
           </section>
@@ -33,7 +33,7 @@ export default function Terms() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-slate-900">2. Deskripsi Layanan</h2>
             <p>
-              Reseller AI adalah platform SaaS yang menyediakan alat berbasis kecerdasan buatan untuk membantu
+              Remindly AI adalah platform SaaS yang menyediakan alat berbasis kecerdasan buatan untuk membantu
               reseller mengotomatisasi penemuan produk, pembuatan konten pemasaran, engagement media sosial, dan
               konversi penjualan. Layanan ini terhubung ke platform pihak ketiga (termasuk Meta/Facebook) atas
               instruksi dan konfigurasi pengguna.
@@ -144,7 +144,7 @@ export default function Terms() {
 
       <footer className="border-t border-slate-100 px-6 py-6">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <span className="text-xs text-slate-400">© 2026 Reseller AI</span>
+          <span className="text-xs text-slate-400">© 2026 Remindly AI</span>
           <div className="flex gap-4 text-xs text-slate-400">
             <Link to="/" className="hover:text-slate-700">Beranda</Link>
             <Link to="/privacy" className="hover:text-slate-700">Privacy Policy</Link>

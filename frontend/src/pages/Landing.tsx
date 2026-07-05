@@ -86,11 +86,11 @@ export default function Landing() {
           <div className="flex items-center gap-2.5">
             <img
               src="/logo.jpeg"
-              alt="Reseller AI"
+              alt="Remindly AI"
               className="h-7 w-7 rounded-full object-cover"
             />
             <span className="text-sm font-semibold tracking-tight text-slate-900">
-              Reseller AI
+              Remindly AI
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -262,7 +262,7 @@ export default function Landing() {
         <div className="mx-auto max-w-xl px-6">
           <img
             src="/logo.jpeg"
-            alt="Reseller AI"
+            alt="Remindly AI"
             className="mx-auto mb-6 h-12 w-12 rounded-full object-cover opacity-90"
           />
           <h2 className="mb-4 text-2xl font-bold tracking-tight">
@@ -287,11 +287,11 @@ export default function Landing() {
           <div className="flex items-center gap-2">
             <img
               src="/logo.jpeg"
-              alt="Reseller AI"
+              alt="Remindly AI"
               className="h-5 w-5 rounded-full object-cover opacity-60"
             />
             <span className="text-xs text-slate-400">
-              © 2026 Reseller AI. Semua hak dilindungi.
+              © 2026 Remindly AI. Semua hak dilindungi.
             </span>
           </div>
           <div className="flex gap-4 text-xs text-slate-400">
