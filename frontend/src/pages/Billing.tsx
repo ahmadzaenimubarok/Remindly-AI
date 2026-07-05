@@ -6,6 +6,12 @@ import AppLayout from "@/components/AppLayout";
 
 const PLANS = [
   {
+    key: "free",
+    label: "Gratis",
+    price: "Rp 0 / bulan",
+    features: ["Instagram reply", "Manajemen produk", "Inbox & leads"],
+  },
+  {
     key: "starter",
     label: "Starter",
     price: "Rp 99.000 / bulan",
@@ -97,9 +103,12 @@ export default function Billing() {
         )}
 
         {/* Plan cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PLANS.map((plan) => {
             const isCurrent = status?.plan === plan.key;
+            const isFree = plan.key === "free";
+            const isEnterprise = plan.key === "enterprise";
+            const canCheckout = !isCurrent && !isFree && !isEnterprise;
             return (
               <div
                 key={plan.key}
@@ -127,18 +136,20 @@ export default function Billing() {
                 </ul>
                 <Button
                   size="sm"
-                  disabled={isCurrent || redirecting || plan.key === "enterprise"}
-                  onClick={() => plan.key !== "enterprise" && startCheckout(plan.key)}
+                  disabled={isCurrent || redirecting || isFree || isEnterprise}
+                  onClick={() => canCheckout && startCheckout(plan.key)}
                   className={
-                    isCurrent
+                    isCurrent || isFree
                       ? "bg-slate-100 text-slate-400 cursor-default"
                       : "bg-[#0d7a8a] hover:bg-[#0b6b7a] text-white"
                   }
                 >
-                  {plan.key === "enterprise"
+                  {isEnterprise
                     ? "Hubungi Kami"
                     : isCurrent
                     ? "Plan Aktif"
+                    : isFree
+                    ? "Plan Saat Ini"
                     : redirecting
                     ? "Mengalihkan..."
                     : "Pilih Plan"}

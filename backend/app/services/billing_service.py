@@ -74,6 +74,13 @@ async def create_checkout_session(
     return session.url
 
 
+async def _get_tenant_by_customer_id(customer_id: str, db: AsyncSession) -> Tenant | None:
+    result = await db.execute(
+        select(Tenant).where(Tenant.stripe_customer_id == customer_id)
+    )
+    return result.scalar_one_or_none()
+
+
 async def handle_stripe_webhook(
     payload: bytes,
     sig_header: str,
@@ -90,34 +97,76 @@ async def handle_stripe_webhook(
         logger.warning("Stripe webhook signature invalid")
         raise ValueError("Signature tidak valid")
 
-    if event["type"] != "checkout.session.completed":
-        logger.debug("Stripe webhook ignored", extra={"event_type": event["type"]})
-        return
+    event_type = event["type"]
+    obj = event["data"]["object"]
 
-    session_obj = event["data"]["object"]
-    metadata = session_obj.get("metadata", {})
+    if event_type == "checkout.session.completed":
+        await _handle_checkout_completed(obj, db)
+    elif event_type == "invoice.paid":
+        await _handle_invoice_paid(obj, db)
+    elif event_type == "customer.subscription.deleted":
+        await _handle_subscription_deleted(obj, db)
+    else:
+        logger.debug("Stripe webhook ignored", extra={"event_type": event_type})
+
+
+async def _handle_checkout_completed(obj: dict, db: AsyncSession) -> None:
+    metadata = obj.get("metadata", {})
     tenant_id = metadata.get("tenant_id")
     plan = metadata.get("plan")
-    customer_id = session_obj.get("customer")
+    customer_id = obj.get("customer")
 
     if not tenant_id or not plan:
-        logger.error("Stripe webhook missing metadata", extra={"metadata": metadata})
+        logger.error("checkout.session.completed missing metadata", extra={"metadata": metadata})
         return
 
     tenant = await _get_tenant(tenant_id, db)
     if tenant is None:
-        logger.error("Stripe webhook tenant not found", extra={"tenant_id": tenant_id})
+        logger.error("checkout.session.completed tenant not found", extra={"tenant_id": tenant_id})
         return
 
     duration = PLAN_DURATION_DAYS.get(plan, 30)
     expires_at = datetime.now(timezone.utc) + timedelta(days=duration)
-
     tenant.plan = plan
     tenant.plan_expires_at = expires_at.isoformat()
     if customer_id:
         tenant.stripe_customer_id = customer_id
 
+    logger.info("Plan upgraded via checkout", extra={"tenant_id": tenant_id, "plan": plan})
+
+
+async def _handle_invoice_paid(obj: dict, db: AsyncSession) -> None:
+    customer_id = obj.get("customer")
+    if not customer_id:
+        return
+
+    tenant = await _get_tenant_by_customer_id(customer_id, db)
+    if tenant is None:
+        logger.warning("invoice.paid tenant not found", extra={"customer_id": customer_id})
+        return
+
+    # Perpanjang dari sekarang, bukan dari tanggal expiry sebelumnya
+    duration = PLAN_DURATION_DAYS.get(tenant.plan, 30)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=duration)
+    tenant.plan_expires_at = expires_at.isoformat()
+
     logger.info(
-        "Tenant plan upgraded via Stripe",
-        extra={"tenant_id": tenant_id, "plan": plan, "expires_at": expires_at.isoformat()},
+        "Plan renewed via invoice.paid",
+        extra={"tenant_id": str(tenant.id), "plan": tenant.plan, "expires_at": expires_at.isoformat()},
     )
+
+
+async def _handle_subscription_deleted(obj: dict, db: AsyncSession) -> None:
+    customer_id = obj.get("customer")
+    if not customer_id:
+        return
+
+    tenant = await _get_tenant_by_customer_id(customer_id, db)
+    if tenant is None:
+        logger.warning("subscription.deleted tenant not found", extra={"customer_id": customer_id})
+        return
+
+    tenant.plan = "free"
+    tenant.plan_expires_at = None
+
+    logger.info("Plan downgraded to free via subscription.deleted", extra={"tenant_id": str(tenant.id)})
