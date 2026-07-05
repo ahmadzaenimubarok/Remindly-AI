@@ -115,10 +115,13 @@ export default function Billing() {
           {PLANS.map((plan) => {
             const isCurrent = status?.plan === plan.key;
             const isPending = status?.pending_plan === plan.key;
+            const hasPending = !!status?.pending_plan;
+            // Plan aktif bisa diklik untuk batalkan pending downgrade
+            const isCurrentCancelable = isCurrent && hasPending && !isFree;
             const isFree = plan.key === "free";
             const isEnterprise = plan.key === "enterprise";
-            const canCheckout = !isCurrent && !isFree && !isEnterprise && !isPending;
-            const highlight = isCurrent || isPending;
+            const canAct = (!isCurrent || isCurrentCancelable) && !isFree && !isEnterprise && !isPending;
+            const isDisabled = (isCurrent && !isCurrentCancelable) || isPending || isFree || isEnterprise || redirecting;
             return (
               <div
                 key={plan.key}
@@ -155,18 +158,22 @@ export default function Billing() {
                 </ul>
                 <Button
                   size="sm"
-                  disabled={highlight || redirecting || isFree || isEnterprise}
-                  onClick={() => canCheckout && startCheckout(plan.key)}
+                  disabled={isDisabled}
+                  onClick={() => canAct && startCheckout(plan.key)}
                   className={
-                    isCurrent || isFree
+                    isFree || (isCurrent && !isCurrentCancelable)
                       ? "bg-slate-100 text-slate-400 cursor-default"
                       : isPending
                       ? "bg-amber-100 text-amber-700 cursor-default"
+                      : isCurrentCancelable
+                      ? "bg-slate-200 hover:bg-slate-300 text-slate-700"
                       : "bg-[#0d7a8a] hover:bg-[#0b6b7a] text-white"
                   }
                 >
                   {isEnterprise
                     ? "Hubungi Kami"
+                    : isCurrentCancelable
+                    ? "Batalkan Downgrade"
                     : isCurrent
                     ? "Plan Aktif"
                     : isPending

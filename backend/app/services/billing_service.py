@@ -59,8 +59,12 @@ async def create_checkout_session(
     if plan not in PLAN_PRICES:
         raise ValueError(f"Plan tidak valid: {plan}")
 
+    # Blok hanya kalau plan sama DAN tidak ada pending downgrade yang perlu dibatalkan
     if plan == tenant.plan and not tenant.pending_plan:
         raise ValueError("Plan yang dipilih sama dengan plan aktif")
+    # Juga blok kalau plan sama dengan pending (downgrade yang sama sudah dijadwalkan)
+    if plan == tenant.pending_plan:
+        raise ValueError("Downgrade ke plan ini sudah dijadwalkan")
 
     # Sudah punya subscription aktif → modifikasi langsung, tidak perlu Checkout
     if tenant.stripe_subscription_id:
@@ -95,27 +99,47 @@ async def create_checkout_session(
 
 async def _modify_subscription(tenant: Tenant, new_plan: str, db: AsyncSession) -> None:
     """
-    Upgrade  → proration_behavior='always_invoice': bayar selisih prorata langsung.
-    Downgrade → proration_behavior='none': pindah plan di renewal berikutnya.
+    Upgrade              → proration_behavior='always_invoice': bayar selisih prorata langsung.
+    Cancel pending        → kembalikan ke plan aktif, batalkan scheduled downgrade.
+    Downgrade baru        → proration_behavior='none': pindah plan di renewal berikutnya.
     """
     settings = get_settings()
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
     sub = stripe.Subscription.retrieve(tenant.stripe_subscription_id)
     item_id = sub["items"]["data"][0]["id"]
+
+    # Batalkan pending downgrade — kembalikan ke plan aktif saat ini
+    canceling_pending = tenant.pending_plan and new_plan == tenant.plan
     upgrading = _is_upgrade(tenant.plan, new_plan)
 
-    if upgrading:
+    if canceling_pending:
+        # Kembalikan subscription ke price plan aktif, batalkan scheduled change
+        stripe.Subscription.modify(
+            tenant.stripe_subscription_id,
+            items=[{"id": item_id, "price": PLAN_PRICES[tenant.plan]}],
+            proration_behavior="none",
+            billing_cycle_anchor="unchanged",
+            metadata={"tenant_id": str(tenant.id), "plan": tenant.plan},
+        )
+        tenant.pending_plan = None
+        tenant.pending_plan_date = None
+        logger.info("Pending downgrade cancelled", extra={"tenant_id": str(tenant.id), "plan": tenant.plan})
+
+    elif upgrading:
         stripe.Subscription.modify(
             tenant.stripe_subscription_id,
             items=[{"id": item_id, "price": PLAN_PRICES[new_plan]}],
             proration_behavior="always_invoice",
             metadata={"tenant_id": str(tenant.id), "plan": new_plan},
         )
-        # Plan aktif langsung dikonfirmasi via webhook invoice.paid
+        # Batalkan juga pending downgrade kalau ada
+        tenant.pending_plan = None
+        tenant.pending_plan_date = None
         logger.info("Subscription upgrade initiated", extra={"tenant_id": str(tenant.id), "plan": new_plan})
+
     else:
-        # Downgrade: jadwalkan di akhir periode berjalan
+        # Downgrade baru: jadwalkan di akhir periode berjalan
         period_end = sub["current_period_end"]
         stripe.Subscription.modify(
             tenant.stripe_subscription_id,
