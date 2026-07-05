@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useLeads, type LeadResponse } from "@/hooks/useLeads";
 
@@ -9,6 +11,7 @@ const TIER_CONFIG = {
     bar: "bg-red-500",
     dot: "bg-red-500",
     glow: "border-red-200",
+    avatar: "bg-red-100 text-red-700",
   },
   warm: {
     label: "Hangat",
@@ -17,6 +20,7 @@ const TIER_CONFIG = {
     bar: "bg-amber-400",
     dot: "bg-amber-500",
     glow: "border-amber-200",
+    avatar: "bg-amber-100 text-amber-700",
   },
   cold: {
     label: "Dingin",
@@ -25,6 +29,7 @@ const TIER_CONFIG = {
     bar: "bg-slate-300",
     dot: "bg-slate-400",
     glow: "border-slate-200",
+    avatar: "bg-slate-100 text-slate-600",
   },
 } as const;
 
@@ -60,17 +65,16 @@ function relativeTime(iso: string | null) {
   if (!iso) return "—";
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (diff < 60) return `${diff}d lalu`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m lalu`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}j lalu`;
-  return `${Math.floor(diff / 86400)}h lalu`;
+  if (diff < 3600) return `${Math.floor(diff / 60)} menit lalu`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
+  return `${Math.floor(diff / 86400)} hari lalu`;
 }
 
-// Heatbar — representasi visual seberapa "panas" lead
 function TierBar({ tier }: { tier: "hot" | "warm" | "cold" }) {
   const fill = tier === "hot" ? 100 : tier === "warm" ? 55 : 20;
   const cfg = TIER_CONFIG[tier];
   return (
-    <div className="h-1 w-full rounded-full bg-slate-100 overflow-hidden">
+    <div className="h-1 w-full rounded-full bg-slate-100 overflow-hidden" role="presentation">
       <div
         className={`h-full rounded-full ${cfg.bar} transition-all`}
         style={{ width: `${fill}%` }}
@@ -92,24 +96,20 @@ function LeadCard({
 }) {
   const tier = TIER_CONFIG[lead.tier];
   const name = lead.customer_name ?? "Tanpa nama";
-  const platform = PLATFORM_LABEL[lead.customer_platform ?? ""] ?? lead.customer_platform ?? "—";
+  const platform =
+    PLATFORM_LABEL[lead.customer_platform ?? ""] ?? lead.customer_platform ?? "—";
 
   return (
-    <div
-      className={`rounded-xl border bg-white p-5 shadow-sm flex flex-col gap-4 transition-shadow hover:shadow-md ${tier.glow}`}
+    <article
+      className={`rounded-lg border bg-white p-4 sm:p-5 shadow-sm flex flex-col gap-3.5 ${tier.glow}`}
+      aria-label={`${name} — ${tier.label}`}
     >
-      {/* Header */}
+      {/* Header: avatar + name + tier badge */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          {/* Avatar inisial */}
           <div
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
-              lead.tier === "hot"
-                ? "bg-red-100 text-red-700"
-                : lead.tier === "warm"
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-slate-100 text-slate-600"
-            }`}
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${tier.avatar}`}
+            aria-hidden="true"
           >
             {name.charAt(0).toUpperCase()}
           </div>
@@ -118,7 +118,6 @@ function LeadCard({
             <p className="text-xs text-slate-400">{platform}</p>
           </div>
         </div>
-
         <span
           className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold border ${tier.badge}`}
         >
@@ -129,28 +128,22 @@ function LeadCard({
       {/* Heat bar */}
       <TierBar tier={lead.tier} />
 
-      {/* Sinyal */}
-      <div className="rounded-lg bg-slate-50 px-3 py-2.5">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400 mb-0.5">
-          Sinyal
-        </p>
+      {/* Signal */}
+      <div className="rounded-md bg-slate-50 px-3 py-2.5">
+        <p className="text-[11px] font-medium text-slate-400 mb-0.5">Sinyal</p>
         <p className="text-sm text-slate-700">{formatReason(lead.tier_reason)}</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-lg bg-slate-50 px-3 py-2">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
-            Interaksi
-          </p>
-          <p className="text-lg font-bold text-slate-900">{lead.interaction_count}</p>
+        <div className="rounded-md bg-slate-50 px-3 py-2">
+          <p className="text-[11px] text-slate-400 mb-0.5">Interaksi</p>
+          <p className="text-base font-bold text-slate-900">{lead.interaction_count}</p>
           <p className="text-[11px] text-slate-400">total pesan</p>
         </div>
-        <div className="rounded-lg bg-slate-50 px-3 py-2">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-slate-400">
-            Terakhir aktif
-          </p>
-          <p className="text-lg font-bold text-slate-900">
+        <div className="rounded-md bg-slate-50 px-3 py-2">
+          <p className="text-[11px] text-slate-400 mb-0.5">Terakhir aktif</p>
+          <p className="text-sm font-semibold text-slate-900 leading-snug">
             {relativeTime(lead.last_interaction)}
           </p>
           <p className="text-[11px] text-slate-400">
@@ -159,24 +152,26 @@ function LeadCard({
         </div>
       </div>
 
-      {/* Actions */}
+      {/* Actions — min 44px touch target */}
       {showActions && (
         <div className="flex gap-2 pt-1 border-t border-slate-100">
           <button
             onClick={() => onResolve(lead.id)}
-            className="flex-1 rounded-md py-1.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+            className="flex-1 min-h-[44px] rounded-md px-3 py-2.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 active:bg-emerald-200 transition-colors"
+            aria-label={`Tandai ${name} selesai`}
           >
             Tandai Selesai
           </button>
           <button
             onClick={() => onArchive(lead.id)}
-            className="rounded-md px-3 py-1.5 text-xs font-semibold bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 transition-colors"
+            className="min-h-[44px] rounded-md px-3 py-2.5 text-xs font-semibold bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 active:bg-slate-100 transition-colors"
+            aria-label={`Arsipkan ${name}`}
           >
             Arsip
           </button>
         </div>
       )}
-    </div>
+    </article>
   );
 }
 
@@ -211,37 +206,57 @@ export default function Leads() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3 shadow-sm">
-        <div className="flex items-center gap-3">
-          <img src="/logo.jpeg" alt="Reseller AI" className="h-7 w-7 rounded-full object-cover" />
-          <span className="text-sm font-semibold text-slate-900">Reseller AI — Leads</span>
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6 py-3 shadow-sm">
+        <div className="flex items-center gap-3 min-w-0">
+          <img
+            src="/logo.jpeg"
+            alt="Reseller AI"
+            className="h-7 w-7 rounded-full object-cover shrink-0"
+          />
+          <span className="text-sm font-semibold text-slate-900 truncate">
+            Reseller AI — Leads
+          </span>
           {hotCount > 0 && (
-            <span className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-              <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
-              {hotCount} prospek panas
+            <span
+              aria-label={`${hotCount} prospek panas`}
+              className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 shrink-0"
+            >
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 rounded-full bg-red-500 inline-block [animation:pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite] motion-reduce:animate-none"
+              />
+              {hotCount} panas
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <a href="/inbox" className="text-xs text-slate-500 hover:text-slate-900 transition-colors">
-            Inbox
-          </a>
-          <button
-            onClick={logout}
+        <div className="flex items-center gap-3 shrink-0">
+          <Link
+            to="/inbox"
             className="text-xs text-slate-500 hover:text-slate-900 transition-colors"
           >
+            Inbox
+          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={logout}
+            className="text-slate-500 hover:text-slate-900"
+          >
             Keluar
-          </button>
+          </Button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-6">
-        {/* Summary bar */}
+      <main className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
+        {/* Summary bar — stacks on mobile */}
         {statusFilter === "active" && (hotCount > 0 || warmCount > 0) && (
-          <div className="mb-6 flex gap-3">
+          <div className="mb-6 flex flex-col sm:flex-row gap-3">
             {hotCount > 0 && (
-              <div className="flex items-center gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-                <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+              <div className="flex items-center gap-2.5 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+                <span
+                  aria-hidden="true"
+                  className="h-2 w-2 shrink-0 rounded-full bg-red-500 [animation:pulse_2s_cubic-bezier(0.4,0,0.6,1)_infinite] motion-reduce:animate-none"
+                />
                 <div>
                   <p className="text-sm font-semibold text-red-700">{hotCount} prospek panas</p>
                   <p className="text-xs text-red-500">Perlu follow-up segera</p>
@@ -249,8 +264,11 @@ export default function Leads() {
               </div>
             )}
             {warmCount > 0 && (
-              <div className="flex items-center gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <span className="h-2 w-2 rounded-full bg-amber-500" />
+              <div className="flex items-center gap-2.5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                <span
+                  aria-hidden="true"
+                  className="h-2 w-2 shrink-0 rounded-full bg-amber-500"
+                />
                 <div>
                   <p className="text-sm font-semibold text-amber-700">{warmCount} prospek hangat</p>
                   <p className="text-xs text-amber-600">Sedang tertarik, pantau terus</p>
@@ -260,14 +278,20 @@ export default function Leads() {
           </div>
         )}
 
-        {/* Filters */}
-        <div className="mb-5 flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4">
-            <div className="flex gap-1.5">
+        {/* Filters — stacks on mobile, side-by-side on sm+ */}
+        <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+            {/* Tier filter */}
+            <div
+              className="flex gap-1.5 flex-wrap"
+              role="group"
+              aria-label="Filter tier lead"
+            >
               {TIER_TABS.map((t) => (
                 <button
                   key={t.key}
                   onClick={() => setTierFilter(t.key)}
+                  aria-pressed={tierFilter === t.key}
                   className={[
                     "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
                     tierFilter === t.key
@@ -279,11 +303,18 @@ export default function Leads() {
                 </button>
               ))}
             </div>
-            <div className="flex gap-1.5 border-l border-slate-200 pl-4">
+
+            {/* Status filter — separator adapts between horizontal line (mobile) and vertical divider (desktop) */}
+            <div
+              className="flex gap-1.5 flex-wrap pt-1.5 border-t border-slate-200 sm:pt-0 sm:border-t-0 sm:border-l sm:border-slate-200 sm:pl-4"
+              role="group"
+              aria-label="Filter status lead"
+            >
               {STATUS_TABS.map((s) => (
                 <button
                   key={s.key}
                   onClick={() => setStatusFilter(s.key)}
+                  aria-pressed={statusFilter === s.key}
                   className={[
                     "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
                     statusFilter === s.key
@@ -296,12 +327,13 @@ export default function Leads() {
               ))}
             </div>
           </div>
-          <span className="text-xs text-slate-400">
-            {loading ? "Memuat..." : `${leads.length} leads`}
+
+          <span className="text-xs text-slate-400" aria-live="polite">
+            {loading ? "Memuat…" : `${leads.length} leads`}
           </span>
         </div>
 
-        {/* Tier desc */}
+        {/* Tier description */}
         {tierFilter !== "all" && (
           <p className="mb-4 text-xs text-slate-400">
             {TIER_CONFIG[tierFilter as keyof typeof TIER_CONFIG]?.desc}
@@ -309,13 +341,31 @@ export default function Leads() {
         )}
 
         {/* Grid */}
-        {!loading && leads.length === 0 ? (
+        {loading ? (
+          <div
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            aria-busy="true"
+            aria-label="Memuat leads…"
+          >
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5 h-56 animate-pulse"
+                aria-hidden="true"
+              />
+            ))}
+          </div>
+        ) : leads.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-20 text-sm text-slate-400">
-            <span className="text-3xl">📋</span>
+            <span aria-hidden="true" className="text-3xl">📋</span>
             <span>Belum ada lead di kategori ini.</span>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            role="list"
+            aria-label="Daftar leads"
+          >
             {leads.map((lead) => (
               <LeadCard
                 key={lead.id}

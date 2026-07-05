@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import api from "@/lib/api";
-import { useInboxStore, type ThreadResponse } from "@/store/inbox";
+import { useInboxStore, type ThreadMessage, type ThreadResponse } from "@/store/inbox";
 
 export function useConversations() {
   const { filter, setThreads, toggleTakeoverInThread } = useInboxStore();
@@ -34,5 +34,26 @@ export function useConversations() {
     }
   }
 
-  return { handleToggle };
+  async function handleSessionToggle(
+    sessionId: string,
+    messages: ThreadMessage[],
+    newValue: boolean,
+    onSuccess?: () => void,
+    onError?: () => void,
+  ) {
+    messages.forEach((m) => toggleTakeoverInThread(sessionId, m.id, newValue));
+    try {
+      await Promise.all(
+        messages.map((m) =>
+          api.patch(`/conversations/${m.id}/takeover`, { is_human_takeover: newValue }),
+        ),
+      );
+      onSuccess?.();
+    } catch {
+      messages.forEach((m) => toggleTakeoverInThread(sessionId, m.id, !newValue));
+      onError?.();
+    }
+  }
+
+  return { handleToggle, handleSessionToggle };
 }

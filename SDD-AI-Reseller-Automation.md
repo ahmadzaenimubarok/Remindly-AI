@@ -1,7 +1,7 @@
 # Software Design Document (SDD)
 ## AI-Powered SaaS Dashboard — Reseller Automation Platform
 
-**Versi:** 2.6
+**Versi:** 2.7
 **Tanggal:** 4 Juli 2026
 **Status:** Draft
 
@@ -55,16 +55,11 @@ FASE 2 — ENGINE DASAR ✅ SELESAI (2026-07-04)
   - Celery worker wajib dijalankan dengan -Q celery,engagement,discovery,content,conversion
   - facebook_service.py menggunakan httpx.Client (sync) bukan AsyncClient — menghindari event loop conflict di Celery fork worker
 
-FASE 3 — CONTENT
-  [ ] Content & Publishing Engine: caption gen + image gen + scheduler
-  [ ] Dashboard: Content Queue page
+FASE 3 — LEAD INTELLIGENCE
+  [ ] Lead classification: hot / warm / cold dari percakapan masuk
+  [ ] Dashboard: Leads page (daftar lead + status klasifikasi + filter)
 
-FASE 4 — DISCOVERY & CONVERSION
-  [ ] Product Discovery Engine: trend scan + scoring
-  [ ] Sales Conversion Engine: buying intent + link delivery + lead tracking
-  [ ] Dashboard: Leads + Analytics page
-
-FASE 5 — SAAS LAYER
+FASE 4 — SAAS LAYER
   [ ] Subscription & billing (Midtrans/Stripe webhook)
   [ ] Usage metering + quota enforcement
   [ ] Super Admin panel
@@ -417,12 +412,10 @@ Sebelum setiap commit, pastikan:
 
 ## 1. Ringkasan Eksekutif
 
-Sistem ini adalah **AI-Powered SaaS Platform** yang memungkinkan siapa pun menjadi reseller otomatis bertenaga AI. Setiap pengguna (tenant) mendapatkan workspace mandiri berisi empat mesin AI:
+Sistem ini adalah **AI-Powered SaaS Platform** yang memungkinkan siapa pun menjadi reseller lebih efisien bertenaga AI. Setiap pengguna (tenant) mendapatkan workspace mandiri berisi dua mesin AI inti:
 
-1. **Product Discovery Engine** — AI memantau Google Trends, marketplace, dan social listening untuk menemukan produk sedang hype.
-2. **Content & Publishing Engine** — AI membuat caption, visual, dan menjadwalkan posting ke social media secara otomatis.
-3. **Engagement Engine** — AI membalas komentar dan chat (DM/WA) secara real-time menggunakan konteks produk tenant.
-4. **Sales Conversion Engine** — AI mendeteksi niat beli dan mengirimkan link produk (affiliate/reseller) pada momen yang tepat.
+1. **Engagement Engine** — AI membalas komentar dan chat (DM/Messenger) secara real-time menggunakan konteks produk tenant, dengan human takeover mechanic.
+2. **Lead Intelligence Engine** — AI mengklasifikasikan setiap percakapan masuk menjadi **hot / warm / cold lead**, sehingga reseller tahu persis siapa yang perlu di-follow up.
 
 Platform ini dijual sebagai **Software as a Service (SaaS)** dengan model subscription. Satu sistem melayani banyak pengguna (multi-tenant), masing-masing terisolasi secara data, branding, dan konfigurasi AI-nya.
 
@@ -438,18 +431,19 @@ Platform ini dijual sebagai **Software as a Service (SaaS)** dengan model subscr
 
 ### 2.2 Lingkup (In Scope)
 - Sistem multi-tenant dengan isolasi data per workspace.
-- Riset tren produk otomatis.
-- Generasi konten teks & visual.
-- Penjadwalan & publikasi ke Instagram, TikTok, Facebook.
-- Auto-reply chat (Instagram DM, WhatsApp Business API, Messenger) dan komentar.
-- Deteksi buying intent & pengiriman link produk/checkout.
-- Onboarding tenant: registrasi, koneksi akun sosmed, setup produk.
+- Auto-reply chat (Facebook Messenger DM) dan komentar Facebook Page.
+- Lead classification otomatis: hot / warm / cold dari setiap percakapan masuk.
+- Dashboard Inbox: monitoring percakapan + human takeover per chat.
+- Dashboard Leads: daftar lead terklasifikasi + filter status.
+- Onboarding tenant: registrasi, koneksi Facebook Page, setup produk.
 - Manajemen subscription & billing (plan Free / Starter / Pro / Enterprise).
-- Dashboard analytics per tenant (konten, percakapan, konversi, revenue estimate).
 - Super Admin dashboard untuk memantau seluruh tenant, usage, dan kesehatan sistem.
 
-### 2.3 Di Luar Lingkup (Out of Scope, fase awal)
-- Pembuatan video panjang/editing kompleks.
+### 2.3 Di Luar Lingkup (Out of Scope)
+- Generasi konten / caption otomatis.
+- Penjadwalan & publikasi konten ke sosmed.
+- Product discovery / trend scanning.
+- Auto-send link checkout / affiliate.
 - Manajemen stok & logistik fisik.
 - Pembayaran langsung di dalam chat.
 - Mobile native app (prioritas web dashboard dulu).
@@ -463,61 +457,58 @@ Platform ini dijual sebagai **Software as a Service (SaaS)** dengan model subscr
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                          PUBLIC LAYER                                     │
-│   Landing Page · Pricing · Docs · Blog  (React + Vite / Static)               │
+│   Landing Page · Pricing · Docs  (React + Vite / Static)                 │
 └─────────────────────────────┬────────────────────────────────────────────┘
                               │
 ┌─────────────────────────────▼────────────────────────────────────────────┐
 │                        AUTH & TENANT LAYER                                │
 │   Registration · Login · OAuth · Workspace Init · Plan Selection          │
-│   (FastAPI Auth + JWT + OAuth2 — Tenant Provisioning Service)                        │
+│   (FastAPI Auth + JWT + OAuth2 — Tenant Provisioning Service)             │
 └──────┬──────────────────────┬───────────────────────┬────────────────────┘
        │                      │                        │
   [Tenant A]             [Tenant B]               [Tenant C ...]
        │                      │                        │
 ┌──────▼──────────────────────▼────────────────────────▼────────────────────┐
 │                       DASHBOARD LAYER (per tenant)                         │
-│   Product Manager · Content Queue · Inbox · Leads · Analytics · Settings   │
-│   (React SPA, data selalu di-scope ke tenant_id)                  │
+│   Inbox · Leads · Products · Settings · Billing                            │
+│   (React SPA, data selalu di-scope ke tenant_id)                           │
 └──────────────────────────────────┬─────────────────────────────────────────┘
                                    │
 ┌──────────────────────────────────▼─────────────────────────────────────────┐
 │                          API GATEWAY                                         │
 │   Rate limiting · Auth middleware · Tenant context injection · Logging       │
-│   (FastAPI Middleware — rate limit, auth guard, tenant context injection)                             │
-└────┬─────────────────┬──────────────────┬─────────────────┬────────────────┘
-     │                 │                  │                  │
-┌────▼───┐      ┌──────▼──────┐    ┌──────▼──────┐   ┌──────▼──────┐
-│PRODUCT │      │  CONTENT &  │    │ ENGAGEMENT  │   │   SALES     │
-│DISCOV. │      │  PUBLISH    │    │  ENGINE     │   │ CONVERSION  │
-│ENGINE  │      │  ENGINE     │    │             │   │  ENGINE     │
-└────┬───┘      └──────┬──────┘    └──────┬──────┘   └──────┬──────┘
-     │                 │                  │                  │
-┌────▼─────────────────▼──────────────────▼──────────────────▼──────────────┐
-│                       ORCHESTRATOR LAYER                                     │
-│         (Celery + Redis — task queue & scheduler per tenant)                      │
-└────────────────────────────────┬───────────────────────────────────────────┘
-                                 │
-┌────────────────────────────────▼───────────────────────────────────────────┐
-│                          AI / LLM LAYER                                      │
-│   OpenAI API — GPT-4o + GPT-4o-mini (gen, chat, intent)                       │
-│   DALL·E 3 (image gen) · text-embedding-3-small · pgvector                                 │
-│   Prompt router: pilih model sesuai task & plan tenant                       │
-└────────────────────────────────┬───────────────────────────────────────────┘
-                                 │
-┌────────────────────────────────▼───────────────────────────────────────────┐
-│                          DATA LAYER                                           │
-│   PostgreSQL 16 (schema per tenant / Row-Level Security)                         │
-│   pgvector (knowledge base per tenant)                                        │
-│   Redis 7 — Celery broker & event queue per tenant                     │
-│   Object Storage / CDN (media aset per tenant)                                │
-└────────────────────────────────────────────────────────────────────────────┘
+│   (FastAPI Middleware)                                                       │
+└──────────────────────┬───────────────────────────────────────────────────────┘
+                       │
+        ┌──────────────┴──────────────┐
+        │                             │
+┌───────▼───────┐             ┌───────▼───────┐
+│  ENGAGEMENT   │             │     LEAD      │
+│    ENGINE     │             │ INTELLIGENCE  │
+│               │             │    ENGINE     │
+└───────┬───────┘             └───────┬───────┘
+        │                             │
+┌───────▼─────────────────────────────▼───────┐
+│              ORCHESTRATOR LAYER              │
+│    (Celery + Redis — task queue per tenant)  │
+└─────────────────────┬───────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────┐
+│                AI / LLM LAYER               │
+│   OpenRouter / OpenAI — chat, intent,       │
+│   lead classification                       │
+│   text-embedding-3-small · pgvector (RAG)   │
+└─────────────────────┬───────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────┐
+│                 DATA LAYER                  │
+│   PostgreSQL 16 (Row-Level Security)        │
+│   pgvector (knowledge base per tenant)      │
+│   Redis 7 — Celery broker & event queue     │
+└─────────────────────────────────────────────┘
 
 External Integrations (per tenant, credential disimpan ter-enkripsi):
-  - Meta Graph API (IG, FB, Messenger)
-  - TikTok for Business API
-  - WhatsApp Cloud API
-  - Google Trends API / SEMrush
-  - Marketplace Affiliate API (Shopee, Tokopedia, TikTok Shop)
+  - Meta Graph API (FB Page komentar + Messenger DM)
   - Billing: Midtrans (Indonesia) / Stripe (international)
   - Email notifikasi: Resend / Sendgrid
 ```
@@ -528,16 +519,14 @@ External Integrations (per tenant, credential disimpan ter-enkripsi):
 |---|---|---|
 | Auth & Tenant Service | Registrasi, login, provisioning workspace baru | FastAPI + JWT + OAuth2 + PostgreSQL |
 | API Gateway | Rate limiting, inject tenant context, log request | FastAPI Middleware & Dependency Injection |
-| Orchestrator | Workflow terjadwal & event-driven per tenant | Celery + Celery Beat + Redis |
-| LLM Core | Content gen, intent detection, chat RAG | OpenAI API — GPT-4o & GPT-4o-mini |
-| Image/Video Gen | Aset visual promosi produk | Image Gen API |
-| Vector DB | Knowledge base produk per tenant | pgvector (PostgreSQL extension) + text-embedding-3-small |
+| Orchestrator | Workflow event-driven per tenant | Celery + Redis |
+| LLM Core | Intent detection, chat RAG, lead classification | OpenRouter / OpenAI — GPT-4o-mini |
+| Vector DB | Knowledge base produk per tenant (RAG) | pgvector (PostgreSQL extension) + text-embedding-3-small |
 | Relational DB | Semua data bisnis, multi-tenant RLS | PostgreSQL |
 | Message Queue | Antrian event comment/DM per tenant | Redis 7 (Celery broker) |
-| Social Connectors | Post & webhook per akun tenant | Meta Graph API, TikTok API |
-| Chat Connector | WA Business, Messenger, IG DM | WhatsApp Cloud API |
+| FB Connector | Webhook receive + reply (Page komentar + Messenger) | Meta Graph API |
 | Billing Service | Subscription, invoice, usage metering | Midtrans / Stripe |
-| Dashboard (Tenant) | Self-service control panel per tenant | React + Vite + Tailwind CSS |
+| Dashboard (Tenant) | Inbox + Leads + Settings per tenant | React + Vite + Tailwind CSS |
 | Super Admin Panel | Monitor semua tenant, usage, support | React + Vite (protected route) |
 
 ---
@@ -652,34 +641,7 @@ META_OAUTH_SCOPES=pages_manage_posts,pages_read_engagement,pages_messaging
 
 ## 5. Desain Modul (AI Engines)
 
-### 5.1 Modul 1 — Product Discovery Engine
-
-**Tujuan:** Menemukan produk trending otomatis per tenant sesuai niche yang mereka pilih.
-
-**Alur Proses:**
-1. Celery Beat memicu task `trend_scan` per tenant setiap 6 jam.
-2. Sistem query ke sumber tren: Google Trends API, TikTok Creative Center, best seller marketplace, hashtag growth — difilter berdasarkan niche preference tenant.
-3. Hasil mentah dikirim ke LLM untuk scoring: relevansi niche, estimasi margin, kompetisi.
-4. Produk skor tinggi masuk `trending_products` dengan `tenant_id`.
-5. Auto-proceed ke Content Engine jika confidence ≥ threshold, atau masuk antrian approval di dashboard.
-
-**Output:** Kandidat produk + skor + link supplier.
-
-### 5.2 Modul 2 — Content & Publishing Engine
-
-**Tujuan:** Membuat konten marketing dan mempublikasikannya ke akun sosmed tenant.
-
-**Alur Proses:**
-1. Ambil produk dari `trending_products` untuk tenant aktif.
-2. LLM membuat variasi caption per platform (IG vs TikTok vs FB) menggunakan system prompt dan tone brand tenant.
-3. Image Gen membuat visual (atau pakai foto supplier + template branding tenant).
-4. Konten masuk `content_queue` dengan status `draft`. Toggle human-review bisa diaktifkan per tenant.
-5. Posting terjadwal di jam optimal (dari analitik engagement historis akun tenant).
-6. Setelah tayang, log ke `content_log` untuk feedback loop.
-
-**Output:** Post terpublikasi + performa log.
-
-### 5.3 Modul 3 — Engagement Engine
+### 5.1 Modul 1 — Engagement Engine
 
 **Tujuan:** Auto-reply komentar dan chat menggunakan konteks produk & brand tenant.
 
@@ -709,19 +671,30 @@ META_OAUTH_SCOPES=pages_manage_posts,pages_read_engagement,pages_messaging
 - Topik blacklist dikonfigurasi per tenant via `ai_config.escalation_topics` (array string).
 - AI tidak boleh membuat klaim di luar data produk resmi tenant (RAG-only, tidak hallucinate).
 
-### 5.4 Modul 4 — Sales Conversion Engine
+### 5.3 Modul 3 — Lead Intelligence Engine
 
-**Tujuan:** Mengonversi chat menjadi penjualan dengan link produk di momen tepat.
+**Tujuan:** Mengklasifikasikan setiap percakapan masuk menjadi lead hot / warm / cold sehingga reseller tahu siapa yang perlu di-follow up manual.
 
 **Alur Proses:**
-1. Intent `niat_beli` terdeteksi (confidence ≥ 0.75) → trigger Sales Conversion.
-2. Ambil link produk (affiliate/reseller/checkout) dari tabel `products` sesuai SKU & tenant.
-3. LLM susun pesan closing natural: konfirmasi produk, harga, promo aktif, sisipkan link.
-4. Link dikirim dengan UTM parameter + referral ID tenant untuk tracking.
-5. Lead dicatat: `link_sent` → `clicked` → `converted` (update via webhook marketplace/pixel).
-6. Follow-up otomatis H+1 jika belum checkout.
+1. Setiap conversation diproses oleh Engagement Engine (Modul 1) → intent + sentiment sudah tersedia di `conversations`.
+2. `lead_worker` membaca conversation yang baru diupdate → jalankan `classify_lead()`.
+3. LLM menentukan lead tier berdasarkan:
+   - Intent: `niat_beli` → cenderung hot
+   - Sentiment: positif / netral / negatif
+   - Histori interaksi: berapa kali tanya, sudah berapa lama
+   - Respons terhadap reply AI
+4. Hasil klasifikasi disimpan ke tabel `leads` dengan `tier: hot | warm | cold`.
+5. Hot lead → muncul di bagian atas Leads dashboard + badge merah.
 
-**Output:** Link terkirim + lead tracking + funnel report per tenant.
+**Kriteria Tier:**
+
+| Tier | Sinyal |
+|------|--------|
+| **Hot** | Intent `niat_beli` + sentiment positif + aktif dalam 24 jam |
+| **Warm** | Intent `tanya_info` + bertanya lebih dari 1 kali, atau `niat_beli` tapi belum ada respons positif |
+| **Cold** | Intent `spam` atau tidak ada aktivitas lanjutan setelah reply pertama |
+
+**Output:** Tabel leads terklasifikasi → ditampilkan di Leads dashboard per tenant.
 
 ---
 
@@ -805,21 +778,6 @@ products (
   base_price, margin_estimate, affiliate_link, status
 )
 
-trending_products (
-  id, tenant_id, product_id, trend_source, search_volume,
-  growth_rate, ai_score, approval_status, scanned_at
-)
-
-content_queue (
-  id, tenant_id, product_id, platform, caption,
-  media_url, scheduled_time, status, posted_at
-)
-
-content_log (
-  id, tenant_id, content_id, platform_post_id,
-  likes, comments, shares, reach, captured_at
-)
-
 conversations (
   id UUID PK,
   tenant_id UUID FK NOT NULL,
@@ -837,8 +795,15 @@ conversations (
 )
 
 leads (
-  id, tenant_id, customer_id, product_id, status,
-  link_sent_at, clicked_at, converted_at, utm_source
+  id UUID PK,
+  tenant_id UUID FK NOT NULL,
+  customer_id UUID FK NOT NULL,
+  conversation_id UUID FK NOT NULL,   -- percakapan yang memicu lead ini
+  tier VARCHAR(10) NOT NULL,           -- 'hot' | 'warm' | 'cold'
+  tier_reason TEXT,                    -- penjelasan singkat dari LLM
+  classified_at TIMESTAMPTZ,
+  last_interaction_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ
 )
 
 customers (
@@ -889,14 +854,11 @@ system_logs (
 
 | Halaman | Konten |
 |---|---|
-| **Overview** | Ringkasan: post tayang, reply terkirim, leads hari ini, estimasi konversi |
-| **Products** | Kelola katalog produk + link affiliate, tambah manual atau dari hasil discovery |
-| **Trending** | Daftar produk hasil AI discovery + approval action |
-| **Content Queue** | Draft konten AI + preview + approve/edit/reject + jadwal posting |
+| **Overview** | Ringkasan: percakapan masuk, leads hari ini, hot leads aktif |
+| **Products** | Kelola katalog produk + deskripsi (dipakai untuk RAG context AI reply) |
 | **Inbox** | Semua percakapan aktif, bisa human-takeover per chat |
-| **Leads** | Funnel leads: link sent → clicked → converted |
-| **Analytics** | Grafik engagement, konversi, revenue estimate per produk/platform |
-| **Settings** | Connect sosmed, konfigurasi AI tone, niche preference, jam posting |
+| **Leads** | Daftar lead terklasifikasi: hot / warm / cold + filter + detail percakapan |
+| **Settings** | Connect Facebook Page, konfigurasi AI tone, topik eskalasi |
 | **Billing** | Status plan, usage meter, upgrade, invoice |
 
 ### 8.2 Super Admin Dashboard
@@ -914,32 +876,28 @@ system_logs (
 ## 9. Alur Onboarding Tenant
 
 ```
-1. Daftar akun (email + password / Google OAuth)
+1. Daftar akun (email + password)
        ↓
-2. Pilih niche bisnis (Fashion / Elektronik / Kecantikan / Rumah Tangga / dll)
+2. Connect Facebook Page via OAuth
        ↓
-3. Connect akun sosmed (IG, TikTok, FB via OAuth / WA via WABA number)
+3. Pilih subscription plan (atau mulai Free)
        ↓
-4. Pilih subscription plan (atau mulai Free)
+4. Setup AI: nama toko, tone bahasa (formal/casual/gaul), topik eskalasi
        ↓
-5. Setup AI: nama toko, tone bahasa (formal/casual/gaul), target audiens
+5. Tambah produk pertama (manual — dipakai sebagai konteks RAG untuk AI reply)
        ↓
-6. Tambah produk pertama (manual atau biarkan AI discovery yang cari)
-       ↓
-7. Dashboard aktif — AI mulai bekerja
+6. Dashboard aktif — AI mulai balas komentar & DM, lead masuk otomatis
 ```
 
 ---
 
 ## 10. Alur End-to-End (Contoh Tenant "Toko Kece")
 
-1. **T0** — Scheduler "trend-scan:toko-kece" berjalan → "Tas Rajut Aesthetic" trending +190%.
-2. **T0+5m** — Skor tinggi, auto-proceed. Content Engine membuat caption gaya kasual (sesuai tone setting tenant) + visual.
-3. **T+19:00** — Konten tayang di IG & TikTok Toko Kece.
-4. **T+19:15** — Customer komentar "lucu banget kak ada warna lain?". AI balas: "Ada 5 warna kak, mau yang mana? DM aku ya 😊".
-5. **T+19:22** — Customer DM "mau yang hijau sage, berapa?". AI balas dengan harga + promo + link checkout.
-6. **T+19:25** — Lead `link_sent`. Tenant melihat notifikasi di dashboard.
-7. **T+1 hari** — Belum checkout → AI kirim follow-up "Kak tas hijaunya masih ada nih, stok terbatas 😊".
+1. **T+19:15** — Customer komentar di Facebook Page: "lucu banget kak ada warna lain?". Webhook masuk → Celery task.
+2. **T+19:15+30s** — AI classify intent: `tanya_info`, sentiment: positif. AI balas: "Ada 5 warna kak, mau yang mana? DM aku ya 😊".
+3. **T+19:22** — Customer DM via Messenger: "mau yang hijau sage, berapa?". AI balas dengan info harga + detail produk dari RAG.
+4. **T+19:22** — Intent re-classified: `niat_beli`, sentiment positif, aktif < 24 jam → Lead tier: **Hot**. Lead masuk Leads dashboard.
+5. **T+19:25** — Tenant buka dashboard, lihat badge "Hot Lead — Sarah". Reseller follow up manual.
 
 ---
 
@@ -974,34 +932,20 @@ system_logs (
 
 ## 13. Roadmap Implementasi
 
-### Fase 1 — Internal Tool (Validasi Konsep)
-> Bangun untuk bisnis sendiri dulu, pastikan AI-nya bekerja.
-- Engagement Engine (auto-reply chat & komentar).
-- Dashboard monitoring manual produk.
-- Single tenant, deploy sederhana.
+### Fase 1 — Fondasi ✅ SELESAI
+> Auth, DB, Celery, tenant isolation, feature flags.
 
-### Fase 2 — SaaS MVP
-> Buka ke pengguna pertama (early adopters).
-- Auth & multi-tenant (RLS, isolasi data).
-- Onboarding flow (connect sosmed, setup AI).
-- Content & Publishing Engine + approval dashboard.
-- Billing dasar (Free + 1 paid plan).
+### Fase 2 — Engagement Engine ✅ SELESAI
+> AI CS otomatis: webhook Facebook, intent classify, auto-reply, Inbox dashboard.
 
-### Fase 3 — SaaS Growth
-> Scale ke ratusan tenant.
-- Product Discovery Engine otomatis per tenant.
-- Sales Conversion Engine + lead tracking.
-- Analytics dashboard lengkap.
-- Super Admin panel.
-- Multi-plan (Starter / Pro / Enterprise).
+### Fase 3 — Lead Intelligence
+> Klasifikasi lead hot/warm/cold dari percakapan masuk + Leads dashboard.
 
-### Fase 4 — SaaS Scale
-> Ribuan tenant, fitur premium.
-- White-label option (Enterprise).
-- A/B testing konten AI.
-- Marketplace integration lebih dalam (Shopee/Tokopedia affiliate dashboard).
-- AI training feedback loop (performa konten → improve future generation).
-- Mobile app (iOS/Android) untuk approval & inbox.
+### Fase 4 — SaaS Layer
+> Subscription & billing (Midtrans/Stripe), usage metering, quota enforcement, Super Admin panel.
+
+### Fase 5 — Ekspansi (Opsional, post-launch)
+> Berdasarkan feedback pengguna — misalnya: platform tambahan (IG DM, WhatsApp), analytics lebih dalam, atau fitur lain yang terbukti dibutuhkan pasar.
 
 ---
 
@@ -1101,13 +1045,10 @@ reseller-ai/
 
 | Engine | Model Dev (OpenRouter free) | Model Production (OpenAI) | Alasan |
 |---|---|---|---|
-| Product Discovery scoring | `llama-3.1-8b-instruct:free` | `gpt-4o-mini` | Volume tinggi, reasoning sederhana |
-| Content caption generation | `llama-3.1-8b-instruct:free` | `gpt-4o` | Kualitas tinggi, kreatif, multi-platform |
-| Image generation | — (skip dev) | `dall-e-3` | Visual promosi produk otomatis |
 | RAG embedding (produk/FAQ) | — (skip dev, gunakan dummy vector) | `text-embedding-3-small` | Cepat, akurasi cukup |
 | Engagement chat reply | `llama-3.1-8b-instruct:free` | `gpt-4o-mini` | Volume tinggi, latency rendah |
 | Intent classification | `llama-3.1-8b-instruct:free` + structured output | `gpt-4o-mini` + structured output | Deteksi intent |
-| Sales closing message | `llama-3.1-8b-instruct:free` | `gpt-4o` | Pesan persuasif & natural |
+| Lead classification (hot/warm/cold) | `llama-3.1-8b-instruct:free` + structured output | `gpt-4o-mini` + structured output | Volume sedang, output terstruktur |
 
 > **Abstraksi provider:** `openai_service.py` menggunakan `openai` Python SDK dengan `base_url` dan `api_key` dari env vars. Swap provider = ubah 2 env vars, zero code change.
 
@@ -1403,21 +1344,13 @@ AI Agent memiliki akses ke tool berikut yang dipanggil sesuai kebutuhan:
 
 | Tool | Fungsi | Dipanggil Oleh |
 |---|---|---|
-| `search_trends` | Query Google Trends / TikTok trending | Discovery Engine |
-| `fetch_marketplace_data` | Ambil best seller & harga dari marketplace | Discovery Engine |
-| `generate_caption` | Buat caption per platform & tone | Content Engine |
-| `generate_image` | Buat visual produk | Content Engine |
-| `schedule_post` | Jadwalkan posting ke sosmed | Content Engine |
-| `publish_post` | Posting sekarang ke platform | Content Engine |
 | `classify_intent` | Deteksi niat chat customer | Engagement Engine |
 | `fetch_conversation_history` | Ambil histori chat customer | Engagement Engine |
 | `search_product_knowledge` | RAG ke vector DB produk tenant | Engagement Engine |
 | `send_reply` | Kirim balasan chat/komentar | Engagement Engine |
 | `escalate_to_human` | Tandai percakapan untuk diambil alih manusia | Engagement Engine |
-| `get_product_link` | Ambil link affiliate/checkout | Conversion Engine |
-| `send_product_link` | Kirim link ke customer | Conversion Engine |
-| `schedule_followup` | Jadwalkan follow-up otomatis | Conversion Engine |
-| `log_lead` | Catat lead ke database | Conversion Engine |
+| `classify_lead` | Klasifikasi lead: hot / warm / cold | Lead Intelligence Engine |
+| `log_lead` | Catat / update lead ke database | Lead Intelligence Engine |
 | `check_feature_status` | Cek apakah fitur/integrasi aktif | Semua engine |
 
 ### 15.3 Decision Tree Otonom
@@ -1501,15 +1434,9 @@ if (status !== 'active') {
 
 | Fitur / Integrasi | Trigger Nonaktif | Perilaku Sistem |
 |---|---|---|
-| **Instagram posting** | API key belum diisi atau token expired | Skip posting IG, konten tetap dibuat & disimpan sebagai draft |
-| **TikTok posting** | Belum connect akun | Skip TikTok, posting tetap jalan di platform lain yang aktif |
-| **Facebook posting** | Belum connect Page FB | Skip FB, engine lanjut |
-| **WhatsApp auto-reply** | WABA belum terdaftar atau number belum verify | WA reply dinonaktifkan, channel lain (IG DM, Messenger) tetap jalan |
-| **Instagram DM** | Permission DM belum diaktifkan di Meta app | Skip DM, komentar tetap dijawab |
-| **Product Discovery** | Google Trends / SEMrush key belum ada | Discovery Engine paused, tenant bisa input produk manual |
-| **Image Generation** | API key image gen belum diisi | Gunakan template visual default atau foto dari URL supplier |
-| **Marketplace affiliate** | Tidak ada affiliate link pada produk | Kirim link toko utama (jika ada) atau tahan pengiriman link |
-| **Follow-up otomatis** | Fitur dimatikan tenant atau plan tidak support | Follow-up tidak terjadwal, percakapan tetap tercatat |
+| **Facebook reply** | Token belum dikonfigurasi atau expired | Skip auto-reply, percakapan tetap dicatat di Inbox |
+| **Lead classification** | Plan tidak support atau LLM gagal | Percakapan tetap masuk Inbox, lead tier default `cold` sampai retry berhasil |
+| **RAG / product knowledge** | Belum ada produk di katalog | AI reply tanpa konteks produk spesifik, gunakan fallback prompt umum |
 
 ### 16.4 Pesan yang Ditampilkan ke Tenant (Dashboard)
 
@@ -1603,11 +1530,10 @@ Tenant melihat checklist ini saat pertama masuk dashboard. Fitur terkunci sampai
 
 ```
 SETUP AKUN
-☐ 1. Tambahkan produk pertama              → Buka: Content Engine (manual)
-☐ 2. Hubungkan 1 akun sosmed               → Buka: Posting & auto-reply
-☐ 3. Isi nama toko & tone AI               → Buka: AI personalisasi
-☐ 4. Aktifkan WhatsApp Business            → Buka: WA auto-reply
-☐ 5. Upgrade ke Starter / Pro              → Buka: Discovery Engine, multi-akun
+☐ 1. Hubungkan Facebook Page               → Buka: auto-reply komentar & DM
+☐ 2. Isi nama toko & tone AI               → Buka: AI personalisasi
+☐ 3. Tambahkan produk pertama              → Buka: RAG context untuk reply lebih akurat
+☐ 4. Upgrade ke Starter / Pro              → Buka: kuota reply lebih tinggi, lead intelligence
 
 SETIAP LANGKAH OPSIONAL — sistem tetap berjalan dengan fitur yang sudah aktif.
 ```
@@ -1644,5 +1570,7 @@ system_logs (
 *Versi 2.4 — Klarifikasi & penambahan: (1) RLS strategy diperbarui ke two-layer defense dengan `SET LOCAL` + catatan keamanan pooling (Bagian 4.1); (2) Catatan implementasi vector namespace via `tenant_id` filter (Bagian 4.3); (3) Tabel `users` dengan role `tenant_user` / `super_admin` (Bagian 7); (4) Tabel `product_embeddings` untuk pgvector RAG per tenant (Bagian 7); (5) Tabel `system_logs` untuk internal audit trail (Bagian 7).*
 
 *Versi 2.6 — Landing page & public pages: Tambah Section 4.2 (Shared App Model), 4.3 (AI Context Per Tenant), 4.4 (Alur OAuth Facebook Page per tenant). Env vars baru: `META_REDIRECT_URI`, `META_OAUTH_SCOPES`. Domain sementara: `reseller.jawakoentji.my.id`.*
+
+*Versi 2.7 — Revisi scope produk: (1) Hapus Content & Publishing Engine, Product Discovery Engine, Sales Conversion Engine dari roadmap; (2) Ganti Fase 3 menjadi Lead Intelligence Engine (klasifikasi hot/warm/cold); (3) Fase 4 menjadi SaaS Layer (billing, quota, Super Admin); (4) Update Ringkasan Eksekutif, Lingkup, arsitektur diagram, dashboard pages, onboarding flow, end-to-end contoh, tool registry, dan feature degradation map agar konsisten dengan scope baru.*
 
 *Versi 2.5 — Fase 2 decisions: (1) Engagement Engine Fase 2 scope dipersempit ke Facebook + Messenger saja (Bagian 5.3); (2) Human takeover mechanic ditambahkan: kolom `is_human_takeover` di `conversations`, toggle via API, eskalasi otomatis, polling 10 detik di frontend (Bagian 5.3); (3) Topik eskalasi dikonfigurasi per tenant via `ai_config.escalation_topics` (Bagian 5.3 + skema tenants); (4) AI provider abstraksi: OpenRouter untuk dev/testing, OpenAI untuk production — swap via env vars tanpa ubah kode (Bagian 14.1, 14.3); (5) Skema `conversations` dan `customers` dilengkapi (Bagian 7); (6) Env vars baru: `OPENROUTER_API_KEY`, `OPENROUTER_BASE_URL`, `AI_MODEL_FAST`, `AI_MODEL_QUALITY` (Bagian 0.6).*
