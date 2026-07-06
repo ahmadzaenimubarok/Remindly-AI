@@ -117,3 +117,101 @@ def test_facebook_receive_invalid_payload_returns_400(client):
         headers={"Content-Type": "application/json"},
     )
     assert res.status_code == 400
+
+
+def test_instagram_verify_success(client):
+    settings = get_settings()
+    res = client.get("/webhooks/instagram", params={
+        "hub.mode": "subscribe",
+        "hub.verify_token": settings.META_VERIFY_TOKEN,
+        "hub.challenge": "challenge-ig-123",
+    })
+    assert res.status_code == 200
+    assert res.text == "challenge-ig-123"
+
+
+def test_instagram_verify_wrong_token_returns_403(client):
+    res = client.get("/webhooks/instagram", params={
+        "hub.mode": "subscribe",
+        "hub.verify_token": "wrong-token",
+        "hub.challenge": "challenge-xyz",
+    })
+    assert res.status_code == 403
+
+
+def test_instagram_receive_dm_event(client):
+    payload = {
+        "object": "instagram",
+        "entry": [{
+            "id": "ig-account-123",
+            "messaging": [{
+                "sender": {"id": "igsid-user-1"},
+                "recipient": {"id": "ig-account-123"},
+                "message": {"mid": "ig-mid-abc", "text": "Halo kak stok ada?"},
+            }]
+        }]
+    }
+
+    with patch("app.routers.webhooks.process_instagram_event") as mock_task:
+        mock_task.delay = MagicMock()
+        res = client.post(
+            "/webhooks/instagram",
+            params={"tenant_id": "00000000-0000-0000-0000-000000000001"},
+            json=payload,
+        )
+
+    assert res.status_code == 200
+    assert res.json()["queued"] == 1
+    mock_task.delay.assert_called_once()
+
+
+def test_instagram_receive_ignores_echo_message(client):
+    payload = {
+        "object": "instagram",
+        "entry": [{
+            "id": "ig-account-123",
+            "messaging": [{
+                "sender": {"id": "ig-account-123"},
+                "recipient": {"id": "igsid-user-1"},
+                "message": {"mid": "ig-mid-echo", "text": "Echo reply", "is_echo": True},
+            }]
+        }]
+    }
+
+    with patch("app.routers.webhooks.process_instagram_event") as mock_task:
+        mock_task.delay = MagicMock()
+        res = client.post(
+            "/webhooks/instagram",
+            params={"tenant_id": "00000000-0000-0000-0000-000000000001"},
+            json=payload,
+        )
+
+    assert res.status_code == 200
+    assert res.json()["queued"] == 0
+    mock_task.delay.assert_not_called()
+
+
+def test_instagram_receive_ignores_non_instagram_object(client):
+    payload = {"object": "page", "entry": []}
+
+    with patch("app.routers.webhooks.process_instagram_event") as mock_task:
+        mock_task.delay = MagicMock()
+        res = client.post(
+            "/webhooks/instagram",
+            params={"tenant_id": "00000000-0000-0000-0000-000000000001"},
+            json=payload,
+        )
+
+    assert res.status_code == 200
+    assert res.json()["status"] == "ignored"
+    mock_task.delay.assert_not_called()
+
+
+def test_instagram_receive_invalid_payload_returns_400(client):
+    res = client.post(
+        "/webhooks/instagram",
+        params={"tenant_id": "00000000-0000-0000-0000-000000000001"},
+        content=b"bukan json",
+        headers={"Content-Type": "application/json"},
+    )
+    assert res.status_code == 400
