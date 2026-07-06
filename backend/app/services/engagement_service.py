@@ -14,6 +14,7 @@ from app.models.system_log import SystemLog
 from app.models.tenant import Tenant
 from app.models.tenant_credential import TenantCredential
 from app.services.facebook_service import get_messenger_user_name, send_comment_reply, send_messenger_reply
+from app.services.instagram_service import get_instagram_user_name, send_instagram_dm
 from app.services.openai_service import IntentResult, check_continuation, classify_intent, generate_reply
 from app.services.rag_service import get_product_context
 
@@ -42,6 +43,18 @@ async def _get_facebook_credential(
         select(TenantCredential).where(
             TenantCredential.tenant_id == uuid.UUID(tenant_id),
             TenantCredential.platform == "facebook",
+        )
+    )
+    return result.scalar_one_or_none()
+
+
+async def _get_instagram_credential(
+    tenant_id: str, db: AsyncSession
+) -> TenantCredential | None:
+    result = await db.execute(
+        select(TenantCredential).where(
+            TenantCredential.tenant_id == uuid.UUID(tenant_id),
+            TenantCredential.platform == "instagram",
         )
     )
     return result.scalar_one_or_none()
@@ -439,6 +452,109 @@ async def process_messenger_message(
 
     await _save_system_log(
         tenant_id, "messenger_reply", "success" if sent else "failed",
+        {"message_id": message_id, "sent": sent}, db,
+    )
+    return str(customer.id)
+
+
+async def process_instagram_dm(
+    tenant_id: str, event: dict, db: AsyncSession
+) -> str | None:
+    """
+    Proses event Instagram DM untuk satu tenant.
+    event keys: message_id, message, sender_id
+    """
+    message_id: str = event["message_id"]
+    message: str = event["message"]
+    sender_id: str = event["sender_id"]
+
+    status = await check_feature_status(tenant_id, "instagram_reply", db)
+    if status != FeatureStatus.ACTIVE:
+        await log_skip(tenant_id, "instagram_reply", status)
+        return None
+
+    tenant = await _get_tenant(tenant_id, db)
+    if tenant is None:
+        logger.error("Tenant not found", extra={"tenant_id": tenant_id})
+        return None
+
+    credential = await _get_instagram_credential(tenant_id, db)
+    if credential is None or credential.is_expired():
+        await _save_system_log(
+            tenant_id, "instagram_dm_reply", "skipped",
+            {"reason": "no_credential", "message_id": message_id}, db,
+        )
+        return None
+
+    existing = await _get_conversation_by_platform_id(tenant_id, message_id, db)
+    if existing is not None:
+        return None
+
+    page_token = decrypt_credential(credential.access_token_encrypted)
+    sender_name = await get_instagram_user_name(page_token, sender_id)
+    customer = await _get_or_create_customer(tenant_id, sender_id, "instagram", sender_name, db)
+
+    session, prior_context_msgs = await _get_or_create_session(
+        tenant_id, customer.id, "instagram", "dm", message, db
+    )
+    prior_context_str = "\n".join(prior_context_msgs) if prior_context_msgs else None
+
+    product_context = await get_product_context(tenant_id, message, db)
+    tenant_context = f"Nama toko: {tenant.name}\n{product_context}"
+
+    intent_result = await classify_intent(message, tenant_context)
+
+    escalation_topics: list[str] = tenant.ai_config.get("escalation_topics", [])
+    should_escalate, escalation_reason = _should_escalate(message, intent_result, escalation_topics)
+
+    if should_escalate:
+        conv = Conversation(
+            tenant_id=uuid.UUID(tenant_id),
+            customer_id=customer.id,
+            session_id=session.id,
+            platform="instagram",
+            channel_type="dm",
+            platform_message_id=message_id,
+            message_in=message,
+            message_out=None,
+            intent=intent_result.intent,
+            sentiment=intent_result.sentiment,
+            is_human_takeover=True,
+            escalation_reason=escalation_reason,
+        )
+        db.add(conv)
+        await _save_system_log(
+            tenant_id, "instagram_dm_escalated", "success",
+            {"message_id": message_id, "reason": escalation_reason}, db,
+        )
+        return str(customer.id)
+
+    tone = tenant.ai_config.get("tone", "casual")
+    reply = await generate_reply(message, product_context, tone, prior_context=prior_context_str)
+    sent = await send_instagram_dm(page_token, sender_id, reply)
+
+    conv = Conversation(
+        tenant_id=uuid.UUID(tenant_id),
+        customer_id=customer.id,
+        session_id=session.id,
+        platform="instagram",
+        channel_type="dm",
+        platform_message_id=message_id,
+        message_in=message,
+        message_out=reply if sent else None,
+        intent=intent_result.intent,
+        sentiment=intent_result.sentiment,
+        is_human_takeover=False,
+    )
+    db.add(conv)
+
+    if _is_closing_signal(message, reply if sent else None, intent_result.intent):
+        session.status = "closed"
+        session.closed_at = datetime.now(timezone.utc)
+        logger.info("Session closed by AI signal", extra={"session_id": str(session.id)})
+
+    await _save_system_log(
+        tenant_id, "instagram_dm_reply", "success" if sent else "failed",
         {"message_id": message_id, "sent": sent}, db,
     )
     return str(customer.id)
