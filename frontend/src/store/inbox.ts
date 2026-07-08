@@ -27,7 +27,7 @@ export interface ThreadResponse {
   messages: ThreadMessage[];
 }
 
-// Legacy — masih dipakai oleh takeover PATCH
+// Legacy — still used by takeover PATCH
 export interface ConversationResponse {
   id: string;
   tenant_id: string;
@@ -49,7 +49,7 @@ type Filter = "all" | "ai" | "human";
 interface InboxStore {
   threads: ThreadResponse[];
   filter: Filter;
-  expanded: string | null; // session_id yang sedang dibuka
+  expanded: string | null; // currently open session_id
   setThreads: (t: ThreadResponse[]) => void;
   setFilter: (f: Filter) => void;
   setExpanded: (id: string | null) => void;

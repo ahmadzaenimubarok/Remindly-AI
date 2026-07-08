@@ -5,7 +5,7 @@ import { useConversations } from "@/hooks/useConversations";
 import { useInboxStore, type ThreadMessage } from "@/store/inbox";
 import AppLayout from "@/components/AppLayout";
 
-const FILTER_LABELS = { all: "Semua", ai: "AI", human: "Human" } as const;
+const FILTER_LABELS = { all: "All", ai: "AI", human: "Human" } as const;
 
 const PLATFORM_ICON: Record<string, string> = {
   facebook: "🌐",
@@ -15,16 +15,16 @@ const PLATFORM_ICON: Record<string, string> = {
 };
 
 const INTENT_LABEL: Record<string, string> = {
-  niat_beli: "Niat beli",
-  tanya_info: "Tanya info",
-  komplain: "Komplain",
+  niat_beli: "Purchase intent",
+  tanya_info: "Info inquiry",
+  komplain: "Complaint",
   spam: "Spam",
 };
 
 const SENTIMENT_LABEL: Record<string, string> = {
-  positive: "Positif",
-  negative: "Negatif",
-  neutral: "Netral",
+  positive: "Positive",
+  negative: "Negative",
+  neutral: "Neutral",
 };
 
 const SENTIMENT_CLASS: Record<string, string> = {
@@ -40,20 +40,20 @@ function truncate(text: string | null, max: number) {
 
 function relativeTime(iso: string) {
   const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (diff < 60) return `${diff}d lalu`;
-  if (diff < 3600) return `${Math.floor(diff / 60)} menit lalu`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
-  return `${Math.floor(diff / 86400)} hari lalu`;
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
 }
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("id-ID", {
+  return new Date(iso).toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
-// Toast notification — muncul 3 detik lalu hilang
+// Toast notification — shows for 3 seconds then disappears
 function Toast({ message, onDone }: { message: string; onDone: () => void }) {
   useEffect(() => {
     const t = setTimeout(onDone, 3000);
@@ -70,7 +70,7 @@ function Toast({ message, onDone }: { message: string; onDone: () => void }) {
   );
 }
 
-// TakeoverButton — hold 600ms untuk konfirmasi, atau klik cepat menampilkan hint
+// TakeoverButton — hold 600ms to confirm, or quick click shows hint
 function TakeoverButton({
   active,
   onConfirm,
@@ -119,7 +119,7 @@ function TakeoverButton({
   useEffect(() => () => cancelHold(), []);
 
   const label = active ? "⚠ Human" : "AI";
-  const ariaLabel = active ? "Tahan untuk kembali ke mode AI" : "Tahan untuk alihkan ke Human";
+  const ariaLabel = active ? "Hold to switch back to AI mode" : "Hold to switch to Human mode";
 
   return (
     <button
@@ -246,7 +246,7 @@ export default function Inbox() {
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-6">
         {/* Filter bar */}
         <div className="mb-4 flex items-center justify-between">
-          <div className="flex gap-2" role="group" aria-label="Filter percakapan">
+          <div className="flex gap-2" role="group" aria-label="Filter conversations">
             {(["all", "ai", "human"] as const).map((f) => (
               <Button
                 key={f}
@@ -264,7 +264,7 @@ export default function Inbox() {
                 {f === "human" && escalatedCount > 0 && (
                   <span
                     className="ml-1.5 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white leading-none"
-                    aria-label={`${escalatedCount} eskalasi`}
+                    aria-label={`${escalatedCount} escalated`}
                   >
                     {escalatedCount}
                   </span>
@@ -273,22 +273,22 @@ export default function Inbox() {
             ))}
           </div>
           <span className="text-xs text-slate-400" aria-live="polite">
-            {threads.length} sesi
+            {threads.length} conversations
           </span>
         </div>
 
         {/* Thread list */}
-        <div className="flex flex-col gap-2" role="list" aria-label="Daftar percakapan">
+        <div className="flex flex-col gap-2" role="list" aria-label="Conversations">
           {threads.length === 0 && (
             <div className="flex flex-col items-center gap-2 py-16 text-sm text-slate-400">
               <span aria-hidden="true" className="text-2xl">📭</span>
-              <span>Belum ada percakapan.</span>
+              <span>No conversations yet.</span>
             </div>
           )}
 
           {threads.map((thread) => {
             const isOpen = expanded === thread.session_id;
-            const displayName = thread.customer_name ?? "Pengguna tanpa nama";
+            const displayName = thread.customer_name ?? "Unknown user";
             const lastMsg =
               thread.messages[thread.messages.length - 1];
             const preview =
@@ -310,7 +310,7 @@ export default function Inbox() {
                     className="flex items-center gap-3 flex-1 min-w-0 text-left"
                     onClick={() => setExpanded(thread.session_id)}
                     aria-expanded={isOpen}
-                    aria-label={`${displayName} — ${thread.message_count} pesan, ${relativeTime(thread.last_message_at)}`}
+                    aria-label={`${displayName} — ${thread.message_count} messages, ${relativeTime(thread.last_message_at)}`}
                   >
                     <div
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm"
@@ -325,8 +325,8 @@ export default function Inbox() {
                         </span>
                         {thread.is_continuation && thread.prior_session_date && (
                           <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700 border border-blue-200">
-                            Lanjutan dari sesi{" "}
-                            {new Date(thread.prior_session_date).toLocaleDateString("id-ID", {
+                            Continuation from{" "}
+                            {new Date(thread.prior_session_date).toLocaleDateString("en-US", {
                               day: "numeric",
                               month: "short",
                             })}
@@ -334,22 +334,22 @@ export default function Inbox() {
                         )}
                         {thread.status === "closed" && (
                           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500 border border-slate-200">
-                            Selesai
+                            Closed
                           </span>
                         )}
                         {thread.has_human_takeover && (
                           <span
                             className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold text-white"
-                            aria-label="Ditangani manusia"
+                            aria-label="Handled by human"
                           >
                             ⚠ Human
                           </span>
                         )}
                       </div>
                       <span className="text-xs text-slate-400">
-                        {thread.message_count} pesan · {relativeTime(thread.last_message_at)}
+                        {thread.message_count} messages · {relativeTime(thread.last_message_at)}
                       </span>
-                      {/* Preview selalu tampil — tidak disembunyikan di mobile */}
+                      {/* Preview always visible — not hidden on mobile */}
                       {!isOpen && preview && (
                         <span className="text-xs text-slate-400 truncate max-w-xs mt-0.5">
                           {truncate(preview, 55)}
@@ -371,10 +371,10 @@ export default function Inbox() {
                           () =>
                             showToast(
                               thread.has_human_takeover
-                                ? "AI kembali aktif"
-                                : "Mode Human — AI dijeda",
+                                ? "AI is active again"
+                                : "Human mode — AI paused",
                             ),
-                          () => showToast("Gagal mengubah mode. Coba lagi."),
+                          () => showToast("Failed to change mode. Try again."),
                         )
                       }
                     />
@@ -389,7 +389,7 @@ export default function Inbox() {
 
                 {/* Messages (expanded) */}
                 {isOpen && (
-                  <div className="border-t border-slate-100" role="region" aria-label="Pesan">
+                  <div className="border-t border-slate-100" role="region" aria-label="Messages">
                     {thread.messages.map((msg) => (
                       <MessageRow
                         key={msg.id}

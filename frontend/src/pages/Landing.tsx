@@ -4,72 +4,72 @@ import { Button } from "@/components/ui/button";
 const FEATURES = [
   {
     icon: "↩",
-    title: "Balas Otomatis 24/7",
-    desc: "AI membalas komentar dan DM Facebook atas nama tokomu — dengan konteks produk yang tepat, kapan saja.",
+    title: "24/7 Auto Reply",
+    desc: "AI replies to comments and DMs across all your platforms on behalf of your business — with the right context, anytime.",
   },
   {
     icon: "⬡",
-    title: "Klasifikasi Lead",
-    desc: "Setiap pelanggan yang interaksi otomatis dikategorikan: panas, hangat, atau dingin — tanpa input manual.",
+    title: "Lead Scoring",
+    desc: "Every customer interaction is automatically categorized: hot, warm, or cold — no manual input needed.",
   },
   {
     icon: "↑",
-    title: "Prioritas Cerdas",
-    desc: "Dashboard lead membantumu fokus ke calon pembeli paling potensial, bukan tenggelam di ratusan chat.",
+    title: "Smart Prioritization",
+    desc: "The lead dashboard helps you focus on the most promising prospects, not drown in hundreds of conversations.",
   },
   {
     icon: "⚡",
     title: "Human Takeover",
-    desc: "Ketika AI mendeteksi komplain atau isu sensitif, notifikasi langsung masuk dan kamu ambil alih.",
+    desc: "When AI detects complaints or sensitive issues, notifications come through instantly and you take over.",
   },
 ];
 
 const STEPS = [
   {
     num: "01",
-    title: "Buat akun",
-    desc: "Workspace siap dalam 2 menit. Tidak perlu kartu kredit untuk mulai.",
+    title: "Create an account",
+    desc: "Workspace ready in 2 minutes. No credit card required to start.",
   },
   {
     num: "02",
-    title: "Hubungkan Facebook",
-    desc: "Connect Facebook Page bisnismu. OAuth aman, token tersimpan terenkripsi.",
+    title: "Connect your channels",
+    desc: "Connect your Facebook, Instagram, or other platforms. Secure OAuth, encrypted token storage.",
   },
   {
     num: "03",
-    title: "AI bekerja",
-    desc: "Engagement aktif — AI balas chat, deteksi niat beli, dan kelola lead secara otomatis.",
+    title: "AI goes to work",
+    desc: "Active engagement — AI replies to chats, detects purchase intent, and manages leads automatically.",
   },
 ];
 
 const PLANS = [
   {
     name: "Free",
-    price: "Gratis",
+    price: "Free",
     period: false,
-    features: ["1 akun Facebook", "50 AI reply/bulan", "Dashboard percakapan"],
+    features: ["1 social account", "50 AI replies/month", "Unified inbox"],
     highlight: false,
   },
   {
     name: "Starter",
-    price: "Rp 149.000",
+    price: "Rp 149,000",
     period: true,
     features: [
-      "3 akun Facebook",
-      "500 AI reply/bulan",
-      "Klasifikasi lead",
-      "Analitik dasar",
+      "3 social accounts",
+      "500 AI replies/month",
+      "Lead scoring",
+      "Basic analytics",
     ],
     highlight: true,
   },
   {
     name: "Pro",
-    price: "Rp 399.000",
+    price: "Rp 399,000",
     period: true,
     features: [
-      "10 akun Facebook",
-      "3.000 AI reply/bulan",
-      "Klasifikasi lead lanjutan",
+      "10 social accounts",
+      "3,000 AI replies/month",
+      "Advanced lead scoring",
       "Custom AI tone",
       "Priority support",
     ],
@@ -100,14 +100,14 @@ export default function Landing() {
               asChild
               className="text-slate-600 hover:text-slate-900"
             >
-              <Link to="/login">Masuk</Link>
+              <Link to="/login">Sign In</Link>
             </Button>
             <Button
               size="sm"
               className="bg-slate-900 text-white hover:bg-slate-800 shadow-sm"
               asChild
             >
-              <Link to="/login">Coba Gratis</Link>
+              <Link to="/login">Try Free</Link>
             </Button>
           </div>
         </div>
@@ -116,16 +116,16 @@ export default function Landing() {
       {/* Hero */}
       <section className="mx-auto max-w-5xl px-6 py-24 text-center">
         <p className="mb-5 text-xs font-medium uppercase tracking-widest text-slate-400">
-          Untuk reseller UMKM Indonesia
+          Omnichannel AI platform
         </p>
         <h1 className="mb-5 text-[2.75rem] font-bold leading-[1.15] tracking-tight text-slate-900">
-          Jual lebih banyak.
+          Sell more across every channel.
           <br />
-          <span className="text-slate-400">Tanpa kerja lebih keras.</span>
+          <span className="text-slate-400">Without working harder.</span>
         </h1>
         <p className="mb-10 text-base text-slate-500 max-w-lg mx-auto leading-relaxed">
-          AI yang membantu reseller balas chat Facebook, deteksi calon pembeli,
-          dan kelola lead — bekerja 24 jam atas nama tokomu.
+          AI that helps your business reply to messages across Facebook, Instagram, and more —
+          detect purchase intent, and manage leads — working 24/7 on your behalf.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Button
@@ -133,9 +133,9 @@ export default function Landing() {
             className="bg-slate-900 text-white hover:bg-slate-800 shadow-sm px-7"
             asChild
           >
-            <Link to="/login">Mulai Gratis</Link>
+            <Link to="/login">Get Started Free</Link>
           </Button>
-          <span className="text-xs text-slate-400">Tidak perlu kartu kredit</span>
+          <span className="text-xs text-slate-400">No credit card required</span>
         </div>
       </section>
 
@@ -143,10 +143,10 @@ export default function Landing() {
       <section className="border-y border-slate-100 bg-slate-50 py-20">
         <div className="mx-auto max-w-5xl px-6">
           <h2 className="mb-3 text-center text-2xl font-bold tracking-tight">
-            Dua hal yang AI-mu kuasai
+            Everything your AI handles
           </h2>
           <p className="mb-12 text-center text-sm text-slate-400">
-            Engagement otomatis dan intelijen lead — dalam satu platform.
+            Multi-platform engagement and lead intelligence — in one dashboard.
           </p>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             {FEATURES.map((f) => (
@@ -171,7 +171,7 @@ export default function Landing() {
       <section className="py-20">
         <div className="mx-auto max-w-5xl px-6">
           <h2 className="mb-12 text-center text-2xl font-bold tracking-tight">
-            Tiga langkah untuk mulai
+            Three steps to get started
           </h2>
           <div className="grid grid-cols-1 gap-10 sm:grid-cols-3">
             {STEPS.map((s) => (
@@ -193,10 +193,10 @@ export default function Landing() {
       <section className="border-y border-slate-100 bg-slate-50 py-20">
         <div className="mx-auto max-w-5xl px-6">
           <h2 className="mb-3 text-center text-2xl font-bold tracking-tight">
-            Harga yang jelas
+            Simple pricing
           </h2>
           <p className="mb-12 text-center text-sm text-slate-400">
-            Mulai gratis, upgrade kapan saja.
+            Start free, upgrade anytime.
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {PLANS.map((p) => (
@@ -215,7 +215,7 @@ export default function Landing() {
                   </span>
                   {p.highlight && (
                     <span className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-semibold text-white">
-                      Populer
+                      Popular
                     </span>
                   )}
                 </div>
@@ -223,7 +223,7 @@ export default function Landing() {
                   {p.price}
                   {p.period && (
                     <span className="text-xs font-normal text-slate-400">
-                      /bulan
+                      /month
                     </span>
                   )}
                 </p>
@@ -249,7 +249,7 @@ export default function Landing() {
                   size="sm"
                   asChild
                 >
-                  <Link to="/login">Mulai</Link>
+                  <Link to="/login">Get Started</Link>
                 </Button>
               </div>
             ))}
@@ -266,17 +266,17 @@ export default function Landing() {
             className="mx-auto mb-6 h-12 w-12 rounded-full object-cover opacity-90"
           />
           <h2 className="mb-4 text-2xl font-bold tracking-tight">
-            Siap otomasi toko kamu?
+            Ready to automate your business?
           </h2>
           <p className="mb-8 text-sm text-slate-500">
-            Bergabung dan biarkan AI bekerja untuk tokomu hari ini.
+            Join now and let AI work across all your channels today.
           </p>
           <Button
             size="lg"
             className="bg-slate-900 text-white hover:bg-slate-800 shadow-sm px-8"
             asChild
           >
-            <Link to="/login">Mulai Gratis Sekarang</Link>
+            <Link to="/login">Get Started Free Now</Link>
           </Button>
         </div>
       </section>
@@ -291,7 +291,7 @@ export default function Landing() {
               className="h-5 w-5 rounded-full object-cover opacity-60"
             />
             <span className="text-xs text-slate-400">
-              © 2026 Remindly AI. Semua hak dilindungi.
+              © 2026 Remindly AI. All rights reserved.
             </span>
           </div>
           <div className="flex gap-4 text-xs text-slate-400">

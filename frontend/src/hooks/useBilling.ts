@@ -10,7 +10,7 @@ export interface BillingStatus {
 }
 
 const PLAN_LABELS: Record<string, string> = {
-  free: "Gratis",
+  free: "Free",
   starter: "Starter",
   pro: "Pro",
   enterprise: "Enterprise",
@@ -28,7 +28,7 @@ export function useBilling() {
       const res = await api.get<{ data: BillingStatus }>("/billing/status");
       setStatus(res.data.data);
     } catch {
-      setError("Gagal memuat info billing.");
+      setError("Failed to load billing info.");
     } finally {
       setIsLoading(false);
     }
@@ -48,14 +48,14 @@ export function useBilling() {
         cancel_url: `${origin}/billing?cancel=1`,
       });
       if (res.data.data.modified) {
-        // Plan langsung diubah tanpa redirect Stripe
+        // Plan changed directly without Stripe redirect
         await fetchStatus();
         setRedirecting(false);
       } else {
         window.location.href = res.data.data.checkout_url;
       }
     } catch {
-      setError("Gagal mengubah plan. Coba lagi.");
+      setError("Failed to change plan. Try again.");
       setRedirecting(false);
     }
   }

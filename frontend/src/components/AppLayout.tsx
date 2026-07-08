@@ -26,7 +26,7 @@ const NAV_ITEMS = [
   },
   {
     to: "/products",
-    label: "Produk",
+    label: "Products",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
@@ -37,7 +37,7 @@ const NAV_ITEMS = [
   },
   {
     to: "/settings",
-    label: "Pengaturan",
+    label: "Settings",
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="12" cy="12" r="3" />
@@ -87,7 +87,7 @@ export default function AppLayout({ children, escalatedCount }: AppLayoutProps) 
           "md:static md:translate-x-0",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
         ].join(" ")}
-        aria-label="Navigasi utama"
+        aria-label="Main navigation"
       >
         {/* Logo */}
         <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-slate-200 px-4">
@@ -155,7 +155,7 @@ export default function AppLayout({ children, escalatedCount }: AppLayoutProps) 
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
-            Keluar
+            Logout
           </button>
         </div>
       </aside>
@@ -167,7 +167,7 @@ export default function AppLayout({ children, escalatedCount }: AppLayoutProps) 
           <button
             onClick={() => setMobileOpen(true)}
             className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
-            aria-label="Buka navigasi"
+            aria-label="Open navigation"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <line x1="3" y1="6" x2="21" y2="6" />

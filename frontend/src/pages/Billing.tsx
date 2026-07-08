@@ -7,22 +7,22 @@ import AppLayout from "@/components/AppLayout";
 const PLANS = [
   {
     key: "free",
-    label: "Gratis",
-    price: "Rp 0 / bulan",
-    features: ["Instagram reply", "Manajemen produk", "Inbox & leads"],
+    label: "Free",
+    price: "Rp 0 / month",
+    features: ["Instagram reply", "Product management", "Inbox & leads"],
   },
   {
     key: "starter",
     label: "Starter",
-    price: "Rp 99.000 / bulan",
+    price: "Rp 99,000 / month",
     features: ["Instagram & TikTok reply", "Content publish", "Product discovery"],
   },
   {
     key: "pro",
     label: "Pro",
-    price: "Rp 299.000 / bulan",
+    price: "Rp 299,000 / month",
     features: [
-      "Semua fitur Starter",
+      "All Starter features",
       "Facebook & WhatsApp reply",
       "Lead classification",
       "Analytics",
@@ -31,14 +31,14 @@ const PLANS = [
   {
     key: "enterprise",
     label: "Enterprise",
-    price: "Hubungi kami",
-    features: ["Semua fitur Pro", "Unlimited channels", "Dedicated support", "Custom SLA"],
+    price: "Contact us",
+    features: ["All Pro features", "Unlimited channels", "Dedicated support", "Custom SLA"],
   },
 ] as const;
 
 function formatExpiry(iso: string | null) {
   if (!iso) return null;
-  return new Date(iso).toLocaleDateString("id-ID", {
+  return new Date(iso).toLocaleDateString("en-US", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -52,9 +52,9 @@ export default function Billing() {
 
   useEffect(() => {
     if (searchParams.get("success") === "1") {
-      setNotice("Pembayaran berhasil! Plan akan aktif dalam beberapa menit.");
+      setNotice("Payment successful! Your plan will be active in a few minutes.");
     } else if (searchParams.get("cancel") === "1") {
-      setNotice("Checkout dibatalkan. Plan tidak berubah.");
+      setNotice("Checkout cancelled. Your plan hasn't changed.");
     }
   }, [searchParams]);
 
@@ -62,7 +62,7 @@ export default function Billing() {
     <AppLayout>
       <div className="mx-auto max-w-4xl p-6">
         <h1 className="mb-1 text-xl font-semibold text-slate-900">Billing & Plan</h1>
-        <p className="mb-6 text-sm text-slate-500">Pilih plan yang sesuai kebutuhan bisnis kamu.</p>
+        <p className="mb-6 text-sm text-slate-500">Choose the plan that fits your business needs.</p>
 
         {notice && (
           <div className="mb-6 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800">
@@ -79,19 +79,19 @@ export default function Billing() {
         {/* Current plan */}
         {!isLoading && status && (
           <div className="mb-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs text-slate-400 mb-1">Plan aktif</p>
+            <p className="text-xs text-slate-400 mb-1">Current plan</p>
             <div className="flex items-center gap-3">
               <span className="text-lg font-semibold text-slate-900">
                 {planLabel[status.plan] ?? status.plan}
               </span>
               {status.plan !== "free" && status.plan_expires_at && (
                 <span className="text-xs text-slate-500">
-                  aktif hingga {formatExpiry(status.plan_expires_at)}
+                  active until {formatExpiry(status.plan_expires_at)}
                 </span>
               )}
               {status.plan === "free" && (
                 <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
-                  Gratis
+                  Free
                 </span>
               )}
             </div>
@@ -101,8 +101,8 @@ export default function Billing() {
         {/* Pending downgrade banner */}
         {!isLoading && status?.pending_plan && (
           <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Plan akan berubah ke <span className="font-semibold">{planLabel[status.pending_plan] ?? status.pending_plan}</span> pada{" "}
-            <span className="font-semibold">{formatExpiry(status.pending_plan_date)}</span>. Kamu masih bisa menikmati plan saat ini hingga tanggal tersebut.
+            Plan will change to <span className="font-semibold">{planLabel[status.pending_plan] ?? status.pending_plan}</span> on{" "}
+            <span className="font-semibold">{formatExpiry(status.pending_plan_date)}</span>. You can still enjoy your current plan until then.
           </div>
         )}
 
@@ -138,12 +138,12 @@ export default function Billing() {
                   <h2 className="font-semibold text-slate-900">{plan.label}</h2>
                   {isCurrent && (
                     <span className="rounded-md bg-[#0d7a8a]/10 px-2 py-0.5 text-xs font-medium text-[#0d7a8a]">
-                      Aktif
+                      Active
                     </span>
                   )}
                   {isPending && (
                     <span className="rounded-md bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                      Dijadwalkan
+                      Scheduled
                     </span>
                   )}
                 </div>
@@ -171,18 +171,18 @@ export default function Billing() {
                   }
                 >
                   {isEnterprise
-                    ? "Hubungi Kami"
+                    ? "Contact Us"
                     : isCurrentCancelable
-                    ? "Batalkan Downgrade"
+                    ? "Cancel Downgrade"
                     : isCurrent
-                    ? "Plan Aktif"
+                    ? "Active Plan"
                     : isPending
-                    ? "Dijadwalkan"
+                    ? "Scheduled"
                     : isFree
-                    ? "Plan Saat Ini"
+                    ? "Current Plan"
                     : redirecting
-                    ? "Memproses..."
-                    : "Pilih Plan"}
+                    ? "Processing..."
+                    : "Choose Plan"}
                 </Button>
               </div>
             );
