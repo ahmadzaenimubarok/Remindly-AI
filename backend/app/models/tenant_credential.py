@@ -28,6 +28,12 @@ class TenantCredential(Base, TimestampMixin):
     expires_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    facebook_user_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )  # Facebook User ID (PSID)
+    page_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )  # Facebook Page ID
 
     def is_expired(self) -> bool:
         if self.expires_at is None:

@@ -1,11 +1,16 @@
 import hashlib
 import hmac
 import logging
+import uuid
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.database import get_db_session
+from app.models.tenant_credential import TenantCredential
 from app.schemas.webhook import FacebookWebhookPayload
 from workers.engagement_worker import process_facebook_event, process_instagram_event
 
@@ -22,6 +27,32 @@ def _verify_fb_signature(body: bytes, signature_header: str | None, app_secret: 
         app_secret.encode(), body, hashlib.sha256
     ).hexdigest()
     return hmac.compare_digest(expected, signature_header)
+
+
+async def _get_tenant_id_by_page_id(page_id: str, db: AsyncSession) -> str | None:
+    """Lookup tenant_id dari page_id yang ada di database."""
+    result = await db.execute(
+        select(TenantCredential.tenant_id).where(
+            TenantCredential.platform == "facebook",
+            TenantCredential.page_id == page_id,
+        )
+    )
+    row = result.first()
+    return str(row[0]) if row else None
+
+
+async def _get_tenant_id_by_ig_account_id(account_id: str, db: AsyncSession) -> str | None:
+    """Lookup tenant_id dari Instagram account_id."""
+    result = await db.execute(
+        select(TenantCredential.tenant_id).where(
+            TenantCredential.platform == "instagram",
+        )
+    )
+    rows = result.all()
+    # Instagram uses the same page token, so we check all instagram credentials
+    for row in rows:
+        return str(row[0]) if row else None
+    return None
 
 
 @router.get("/facebook", response_class=PlainTextResponse)
@@ -41,7 +72,7 @@ async def facebook_verify(
 @router.post("/facebook")
 async def facebook_receive(
     request: Request,
-    tenant_id: str = Query(..., description="UUID tenant pemilik page ini"),
+    db: AsyncSession = Depends(get_db_session),
 ) -> dict:
     """Terima event webhook Facebook (komentar + Messenger DM)."""
     settings = get_settings()
@@ -50,10 +81,7 @@ async def facebook_receive(
     if settings.META_APP_SECRET:
         signature = request.headers.get("X-Hub-Signature-256")
         if not _verify_fb_signature(body, signature, settings.META_APP_SECRET):
-            logger.warning(
-                "Invalid Facebook webhook signature",
-                extra={"tenant_id": tenant_id},
-            )
+            logger.warning("Invalid Facebook webhook signature")
             raise HTTPException(status_code=403, detail="Signature tidak valid.")
 
     try:
@@ -66,6 +94,17 @@ async def facebook_receive(
 
     queued = 0
     for entry in payload.entry:
+        # Lookup tenant_id dari page_id
+        page_id = str(entry.get("id", ""))
+        tenant_id = await _get_tenant_id_by_page_id(page_id, db)
+
+        if not tenant_id:
+            logger.warning(
+                "No tenant found for page_id",
+                extra={"page_id": page_id},
+            )
+            continue
+
         # Komentar Facebook
         for change in entry.get("changes", []):
             if change.get("field") == "feed":
@@ -94,10 +133,7 @@ async def facebook_receive(
                 process_facebook_event.delay(tenant_id, event)
                 queued += 1
 
-    logger.info(
-        "Facebook webhook received",
-        extra={"tenant_id": tenant_id, "queued": queued},
-    )
+    logger.info("Facebook webhook received", extra={"queued": queued})
     return {"status": "ok", "queued": queued}
 
 
@@ -118,7 +154,7 @@ async def instagram_verify(
 @router.post("/instagram")
 async def instagram_receive(
     request: Request,
-    tenant_id: str = Query(..., description="UUID tenant pemilik akun Instagram ini"),
+    db: AsyncSession = Depends(get_db_session),
 ) -> dict:
     """Terima event webhook Instagram (DM)."""
     settings = get_settings()
@@ -127,10 +163,7 @@ async def instagram_receive(
     if settings.META_APP_SECRET:
         signature = request.headers.get("X-Hub-Signature-256")
         if not _verify_fb_signature(body, signature, settings.META_APP_SECRET):
-            logger.warning(
-                "Invalid Instagram webhook signature",
-                extra={"tenant_id": tenant_id},
-            )
+            logger.warning("Invalid Instagram webhook signature")
             raise HTTPException(status_code=403, detail="Signature tidak valid.")
 
     try:
@@ -143,6 +176,16 @@ async def instagram_receive(
 
     queued = 0
     for entry in payload.entry:
+        account_id = str(entry.get("id", ""))
+        tenant_id = await _get_tenant_id_by_ig_account_id(account_id, db)
+
+        if not tenant_id:
+            logger.warning(
+                "No tenant found for Instagram account",
+                extra={"account_id": account_id},
+            )
+            continue
+
         for msg_event in entry.get("messaging", []):
             if "message" in msg_event and not msg_event["message"].get("is_echo"):
                 event = {
@@ -154,8 +197,5 @@ async def instagram_receive(
                 process_instagram_event.delay(tenant_id, event)
                 queued += 1
 
-    logger.info(
-        "Instagram webhook received",
-        extra={"tenant_id": tenant_id, "queued": queued},
-    )
+    logger.info("Instagram webhook received", extra={"queued": queued})
     return {"status": "ok", "queued": queued}

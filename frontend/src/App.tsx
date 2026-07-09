@@ -9,6 +9,8 @@ import Leads from "@/pages/Leads";
 import Products from "@/pages/Products";
 import Settings from "@/pages/Settings";
 import Billing from "@/pages/Billing";
+import FacebookCallback from "@/pages/FacebookCallback";
+import FacebookPages from "@/pages/FacebookPages";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoading, isAuthenticated } = useAuth();
@@ -67,6 +69,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Billing />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/auth/facebook/callback"
+        element={
+          <ProtectedRoute>
+            <FacebookCallback />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/auth/facebook/pages"
+        element={
+          <ProtectedRoute>
+            <FacebookPages />
           </ProtectedRoute>
         }
       />

@@ -9,3 +9,5 @@ backend/.env
 node_modules/
 frontend/dist/
 *.egg-info/
+.impeccable/
+frontend/.env

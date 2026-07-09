@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import api from "@/lib/api";
 import { useInboxStore, type ThreadMessage, type ThreadResponse } from "@/store/inbox";
 
+const USE_DEMO_DATA = import.meta.env.VITE_USE_DEMO_DATA === "true";
+
 function minutesAgo(m: number): string {
   return new Date(Date.now() - m * 60_000).toISOString();
 }
@@ -208,17 +210,22 @@ export function useConversations() {
     if (filter === "human") params.is_human_takeover = "true";
 
     function fetchThreads() {
+      if (USE_DEMO_DATA) {
+        setThreads(DUMMY_THREADS);
+        return;
+      }
+
       api
         .get<{ data: ThreadResponse[] }>("/conversations/threads", { params })
         .then((res) => {
           if (res.data.data && res.data.data.length > 0) {
             setThreads(res.data.data);
           } else {
-            setThreads(DUMMY_THREADS);
+            setThreads([]);
           }
         })
         .catch(() => {
-          setThreads(DUMMY_THREADS);
+          setThreads([]);
         });
     }
 

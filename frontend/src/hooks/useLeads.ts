@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
 
+const USE_DEMO_DATA = import.meta.env.VITE_USE_DEMO_DATA === "true";
+
 export interface LeadResponse {
   id: string;
   tenant_id: string;
@@ -154,6 +156,16 @@ export function useLeads() {
   const [loading, setLoading] = useState(true);
 
   const fetchLeads = useCallback(() => {
+    if (USE_DEMO_DATA) {
+      setLeads(DUMMY_LEADS.filter((l) => {
+        if (tierFilter !== "all" && l.tier !== tierFilter) return false;
+        if (l.status !== statusFilter) return false;
+        return true;
+      }));
+      setLoading(false);
+      return;
+    }
+
     const params: Record<string, string> = {};
     if (tierFilter !== "all") params.tier = tierFilter;
     params.status = statusFilter;
@@ -164,19 +176,11 @@ export function useLeads() {
         if (res.data.data && res.data.data.length > 0) {
           setLeads(res.data.data);
         } else {
-          setLeads(DUMMY_LEADS.filter((l) => {
-            if (tierFilter !== "all" && l.tier !== tierFilter) return false;
-            if (l.status !== statusFilter) return false;
-            return true;
-          }));
+          setLeads([]);
         }
       })
       .catch(() => {
-        setLeads(DUMMY_LEADS.filter((l) => {
-          if (tierFilter !== "all" && l.tier !== tierFilter) return false;
-          if (l.status !== statusFilter) return false;
-          return true;
-        }));
+        setLeads([]);
       })
       .finally(() => setLoading(false));
   }, [tierFilter, statusFilter]);

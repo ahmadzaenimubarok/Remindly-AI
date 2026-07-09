@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -56,13 +56,11 @@ def test_facebook_receive_comment_event(client):
         }]
     }
 
-    with patch("app.routers.webhooks.process_facebook_event") as mock_task:
+    with patch("app.routers.webhooks.process_facebook_event") as mock_task, \
+         patch("app.routers.webhooks._get_tenant_id_by_page_id", new_callable=AsyncMock) as mock_lookup:
         mock_task.delay = MagicMock()
-        res = client.post(
-            "/webhooks/facebook",
-            params={"tenant_id": "00000000-0000-0000-0000-000000000001"},
-            json=payload,
-        )
+        mock_lookup.return_value = "00000000-0000-0000-0000-000000000001"
+        res = client.post("/webhooks/facebook", json=payload)
 
     assert res.status_code == 200
     assert res.json()["queued"] == 1
@@ -81,13 +79,11 @@ def test_facebook_receive_messenger_event(client):
         }]
     }
 
-    with patch("app.routers.webhooks.process_facebook_event") as mock_task:
+    with patch("app.routers.webhooks.process_facebook_event") as mock_task, \
+         patch("app.routers.webhooks._get_tenant_id_by_page_id", new_callable=AsyncMock) as mock_lookup:
         mock_task.delay = MagicMock()
-        res = client.post(
-            "/webhooks/facebook",
-            params={"tenant_id": "00000000-0000-0000-0000-000000000001"},
-            json=payload,
-        )
+        mock_lookup.return_value = "00000000-0000-0000-0000-000000000001"
+        res = client.post("/webhooks/facebook", json=payload)
 
     assert res.status_code == 200
     assert res.json()["queued"] == 1
@@ -98,11 +94,7 @@ def test_facebook_receive_ignores_non_page_object(client):
 
     with patch("app.routers.webhooks.process_facebook_event") as mock_task:
         mock_task.delay = MagicMock()
-        res = client.post(
-            "/webhooks/facebook",
-            params={"tenant_id": "00000000-0000-0000-0000-000000000001"},
-            json=payload,
-        )
+        res = client.post("/webhooks/facebook", json=payload)
 
     assert res.status_code == 200
     assert res.json()["status"] == "ignored"
@@ -112,7 +104,6 @@ def test_facebook_receive_ignores_non_page_object(client):
 def test_facebook_receive_invalid_payload_returns_400(client):
     res = client.post(
         "/webhooks/facebook",
-        params={"tenant_id": "00000000-0000-0000-0000-000000000001"},
         content=b"ini bukan json",
         headers={"Content-Type": "application/json"},
     )
@@ -152,13 +143,11 @@ def test_instagram_receive_dm_event(client):
         }]
     }
 
-    with patch("app.routers.webhooks.process_instagram_event") as mock_task:
+    with patch("app.routers.webhooks.process_instagram_event") as mock_task, \
+         patch("app.routers.webhooks._get_tenant_id_by_ig_account_id", new_callable=AsyncMock) as mock_lookup:
         mock_task.delay = MagicMock()
-        res = client.post(
-            "/webhooks/instagram",
-            params={"tenant_id": "00000000-0000-0000-0000-000000000001"},
-            json=payload,
-        )
+        mock_lookup.return_value = "00000000-0000-0000-0000-000000000001"
+        res = client.post("/webhooks/instagram", json=payload)
 
     assert res.status_code == 200
     assert res.json()["queued"] == 1
@@ -178,13 +167,11 @@ def test_instagram_receive_ignores_echo_message(client):
         }]
     }
 
-    with patch("app.routers.webhooks.process_instagram_event") as mock_task:
+    with patch("app.routers.webhooks.process_instagram_event") as mock_task, \
+         patch("app.routers.webhooks._get_tenant_id_by_ig_account_id", new_callable=AsyncMock) as mock_lookup:
         mock_task.delay = MagicMock()
-        res = client.post(
-            "/webhooks/instagram",
-            params={"tenant_id": "00000000-0000-0000-0000-000000000001"},
-            json=payload,
-        )
+        mock_lookup.return_value = "00000000-0000-0000-0000-000000000001"
+        res = client.post("/webhooks/instagram", json=payload)
 
     assert res.status_code == 200
     assert res.json()["queued"] == 0
@@ -196,11 +183,7 @@ def test_instagram_receive_ignores_non_instagram_object(client):
 
     with patch("app.routers.webhooks.process_instagram_event") as mock_task:
         mock_task.delay = MagicMock()
-        res = client.post(
-            "/webhooks/instagram",
-            params={"tenant_id": "00000000-0000-0000-0000-000000000001"},
-            json=payload,
-        )
+        res = client.post("/webhooks/instagram", json=payload)
 
     assert res.status_code == 200
     assert res.json()["status"] == "ignored"
@@ -210,7 +193,6 @@ def test_instagram_receive_ignores_non_instagram_object(client):
 def test_instagram_receive_invalid_payload_returns_400(client):
     res = client.post(
         "/webhooks/instagram",
-        params={"tenant_id": "00000000-0000-0000-0000-000000000001"},
         content=b"bukan json",
         headers={"Content-Type": "application/json"},
     )

@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 PUBLIC_PATHS = {"/", "/health", "/docs", "/openapi.json", "/redoc"}
 AUTH_PATHS = {"/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout", "/api/v1/auth/me"}
+OAUTH_CALLBACK_PATHS = {"/api/v1/auth/facebook/callback"}
 WEBHOOK_PATH_PREFIX = "/webhooks"
 
 
@@ -18,7 +19,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         path = request.url.path
 
-        if path in PUBLIC_PATHS or path in AUTH_PATHS or path.startswith(WEBHOOK_PATH_PREFIX):
+        if path in PUBLIC_PATHS or path in AUTH_PATHS or path in OAUTH_CALLBACK_PATHS or path.startswith(WEBHOOK_PATH_PREFIX):
             return await call_next(request)
 
         token = self._extract_token(request)
