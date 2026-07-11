@@ -42,17 +42,15 @@ async def _get_tenant_id_by_page_id(page_id: str, db: AsyncSession) -> str | Non
 
 
 async def _get_tenant_id_by_ig_account_id(account_id: str, db: AsyncSession) -> str | None:
-    """Lookup tenant_id dari Instagram account_id."""
+    """Lookup tenant_id dari Instagram account_id (stored in facebook_user_id column)."""
     result = await db.execute(
         select(TenantCredential.tenant_id).where(
             TenantCredential.platform == "instagram",
+            TenantCredential.facebook_user_id == account_id,
         )
     )
-    rows = result.all()
-    # Instagram uses the same page token, so we check all instagram credentials
-    for row in rows:
-        return str(row[0]) if row else None
-    return None
+    row = result.first()
+    return str(row[0]) if row else None
 
 
 @router.get("/facebook", response_class=PlainTextResponse)

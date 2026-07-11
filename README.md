@@ -120,6 +120,7 @@ META_APP_ID=<your-app-id>
 META_APP_SECRET=<your-app-secret>
 META_VERIFY_TOKEN=reseller-ai-webhook-verify-secret
 META_REDIRECT_URI=https://<your-domain>/api/v1/auth/facebook/callback
+META_IG_REDIRECT_URI=https://<your-domain>/api/v1/auth/instagram/callback
 FRONTEND_URL=https://<your-domain>
 
 # Encryption
@@ -228,6 +229,7 @@ cloudflared tunnel run <tunnel-name>
 In `backend/.env`:
 ```ini
 META_REDIRECT_URI=https://your-domain.com/api/v1/auth/facebook/callback
+META_IG_REDIRECT_URI=https://your-domain.com/api/v1/auth/instagram/callback
 FRONTEND_URL=https://your-domain.com
 ```
 
@@ -237,7 +239,7 @@ allow_origins=["http://localhost:5173", "https://your-domain.com"],
 ```
 
 In Facebook Developer Console:
-- **Valid OAuth Redirect URIs**: `https://your-domain.com/api/v1/auth/facebook/callback`
+- **Valid OAuth Redirect URIs**: `https://your-domain.com/api/v1/auth/facebook/callback`, `https://your-domain.com/api/v1/auth/instagram/callback`
 - **Webhooks Callback URL**: `https://your-domain.com/webhooks/facebook`
 
 ## Testing

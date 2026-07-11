@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     META_APP_SECRET: str = ""
     META_VERIFY_TOKEN: str = ""
     META_REDIRECT_URI: str = ""  # Backend callback URL, e.g. http://localhost:8000/api/v1/auth/facebook/callback
+    META_IG_REDIRECT_URI: str = ""  # Backend callback URL untuk Instagram OAuth
     FRONTEND_URL: str = "http://localhost:3000"
 
     # TikTok

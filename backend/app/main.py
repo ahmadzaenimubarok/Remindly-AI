@@ -10,7 +10,7 @@ from app.middleware.error_handler import (
 )
 from app.middleware.rate_limiter import RateLimiterMiddleware
 from app.middleware.tenant_context import TenantContextMiddleware
-from app.routers import auth, billing, conversations, facebook_oauth, features, leads, products, settings, webhooks
+from app.routers import auth, billing, conversations, facebook_oauth, features, instagram_oauth, leads, products, settings, webhooks
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,6 +49,7 @@ app.include_router(leads.router)
 app.include_router(products.router)
 app.include_router(settings.router)
 app.include_router(facebook_oauth.router)
+app.include_router(instagram_oauth.router)
 
 
 @app.get("/health")

@@ -11,6 +11,8 @@ import Settings from "@/pages/Settings";
 import Billing from "@/pages/Billing";
 import FacebookCallback from "@/pages/FacebookCallback";
 import FacebookPages from "@/pages/FacebookPages";
+import InstagramCallback from "@/pages/InstagramCallback";
+import InstagramConnect from "@/pages/InstagramConnect";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoading, isAuthenticated } = useAuth();
@@ -85,6 +87,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <FacebookPages />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/auth/instagram/callback"
+        element={
+          <ProtectedRoute>
+            <InstagramCallback />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/auth/instagram/connect"
+        element={
+          <ProtectedRoute>
+            <InstagramConnect />
           </ProtectedRoute>
         }
       />
