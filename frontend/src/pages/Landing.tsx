@@ -5,7 +5,7 @@ const FEATURES = [
   {
     icon: "↩",
     title: "24/7 Auto Reply",
-    desc: "AI replies to comments and DMs across all your platforms on behalf of your business — with the right context, anytime.",
+    desc: "AI replies to Facebook Messenger, Instagram DMs, and page comments on behalf of your business — with the right context, anytime.",
   },
   {
     icon: "⬡",
@@ -33,7 +33,7 @@ const STEPS = [
   {
     num: "02",
     title: "Connect your channels",
-    desc: "Connect your Facebook, Instagram, or other platforms. Secure OAuth, encrypted token storage.",
+    desc: "Connect your Facebook Page and Instagram Business account. Secure OAuth, encrypted token storage.",
   },
   {
     num: "03",
@@ -47,7 +47,7 @@ const PLANS = [
     name: "Free",
     price: "Free",
     period: false,
-    features: ["1 social account", "50 AI replies/month", "Unified inbox"],
+    features: ["1 social account (FB or IG)", "50 AI replies/month", "Unified inbox"],
     highlight: false,
   },
   {
@@ -72,6 +72,7 @@ const PLANS = [
       "Advanced lead scoring",
       "Custom AI tone",
       "Priority support",
+      "Shopify import (coming soon)",
     ],
     highlight: false,
   },
@@ -116,16 +117,16 @@ export default function Landing() {
       {/* Hero */}
       <section className="mx-auto max-w-5xl px-6 py-24 text-center">
         <p className="mb-5 text-xs font-medium uppercase tracking-widest text-slate-400">
-          Omnichannel AI platform
+          AI customer engagement
         </p>
         <h1 className="mb-5 text-[2.75rem] font-bold leading-[1.15] tracking-tight text-slate-900">
-          Sell more across every channel.
+          Sell more on Facebook & Instagram.
           <br />
           <span className="text-slate-400">Without working harder.</span>
         </h1>
         <p className="mb-10 text-base text-slate-500 max-w-lg mx-auto leading-relaxed">
-          AI that helps your business reply to messages across Facebook, Instagram, and more —
-          detect purchase intent, and manage leads — working 24/7 on your behalf.
+          AI that replies to Facebook Messenger, Instagram DMs, and page comments —
+          detects purchase intent, and manages leads — working 24/7 on your behalf.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Button
@@ -253,6 +254,30 @@ export default function Landing() {
                 </Button>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Coming Soon */}
+      <section className="py-16">
+        <div className="mx-auto max-w-5xl px-6 text-center">
+          <p className="mb-3 text-xs font-medium uppercase tracking-widest text-slate-400">
+            Roadmap
+          </p>
+          <h2 className="mb-6 text-2xl font-bold tracking-tight">
+            More integrations coming soon
+          </h2>
+          <div className="flex flex-wrap justify-center gap-3">
+            {["WhatsApp Business", "TikTok", "Shopify Product Import"].map(
+              (name) => (
+                <span
+                  key={name}
+                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500 shadow-sm"
+                >
+                  {name}
+                </span>
+              )
+            )}
           </div>
         </div>
       </section>

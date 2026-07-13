@@ -81,6 +81,28 @@ export default function Settings() {
             </Button>
           )}
         </div>
+
+        {/* Coming Soon */}
+        <div className="mt-6">
+          <p className="mb-3 text-xs font-medium uppercase tracking-widest text-slate-400">
+            Coming Soon
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {[
+              { name: "WhatsApp Business", desc: "Auto-reply WhatsApp DM" },
+              { name: "TikTok", desc: "Auto-reply TikTok comments & DMs" },
+              { name: "Shopify", desc: "Import produk dari Shopify toko Anda" },
+            ].map((item) => (
+              <div
+                key={item.name}
+                className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 opacity-60"
+              >
+                <h3 className="mb-1 text-sm font-medium text-slate-600">{item.name}</h3>
+                <p className="text-xs text-slate-400">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </AppLayout>
   );

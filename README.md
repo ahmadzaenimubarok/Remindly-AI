@@ -1,6 +1,17 @@
 # Remindly AI
 
-AI-powered customer engagement platform for Indonesian UMKM resellers. Automates Facebook Messenger replies, comment responses, and lead classification using AI.
+AI-powered customer engagement platform for Indonesian UMKM resellers. Automates Facebook Messenger and Instagram DM replies, comment responses, and lead classification using AI.
+
+### Supported Channels
+
+| Channel | Status |
+|---------|--------|
+| Facebook Messenger (DM) | ✅ Live |
+| Facebook Page Comments | ✅ Live |
+| Instagram DM | ✅ Live |
+| WhatsApp Business | 🔜 Coming Soon |
+| TikTok | 🔜 Coming Soon |
+| Shopify (Product Import) | 🔜 Coming Soon |
 
 ## Tech Stack
 
@@ -12,6 +23,7 @@ AI-powered customer engagement platform for Indonesian UMKM resellers. Automates
 | Queue | Redis + Celery |
 | AI | OpenRouter (Llama 3.1) |
 | Billing | Stripe |
+| Integrations | Facebook Messenger, Instagram DM |
 | Tunnel | Cloudflare Tunnel |
 
 ## Prerequisites
@@ -290,8 +302,8 @@ backend/
 │   ├── middleware/      # Tenant context, rate limiter, error handler
 │   ├── models/         # SQLAlchemy models
 │   ├── schemas/        # Pydantic validation schemas
-│   ├── routers/        # API endpoints
-│   └── services/       # Business logic
+│   ├── routers/        # API endpoints (auth, billing, conversations, webhooks, ...)
+│   └── services/       # Business logic (facebook, instagram, engagement, billing, ...)
 ├── workers/            # Celery task workers
 ├── alembic/            # Database migrations
 ├── scripts/            # Seed data scripts
@@ -301,11 +313,24 @@ frontend/
 ├── src/
 │   ├── components/     # Reusable UI components
 │   ├── hooks/          # React hooks (useAuth, useConversations, etc.)
-│   ├── pages/          # Page components (Inbox, Leads, Settings, etc.)
+│   ├── pages/          # Page components (Inbox, Leads, Settings, Billing, ...)
 │   ├── store/          # Zustand state management
 │   └── lib/            # API client, utilities
 └── dist/               # Production build output
+
+docs/
+└── superpowers/
+    ├── plans/          # Implementation plans per phase
+    └── specs/          # Design specifications
 ```
+
+### Upcoming Integrations
+
+| Integration | Status | Plan Document |
+|-------------|--------|---------------|
+| Shopify product import | Planning | `docs/superpowers/plans/2026-07-13-shopify-product-integration.md` |
+| WhatsApp Business | Planned | — |
+| TikTok | Planned | — |
 
 ## Demo Credentials
 

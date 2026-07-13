@@ -21,18 +21,17 @@ class FeatureStatus(str, Enum):
 
 
 PLAN_FEATURES: dict[str, list[str]] = {
-    "free": ["instagram_reply"],
-    "starter": ["instagram_reply", "tiktok_reply", "content_publish"],
+    "free": ["instagram_reply", "facebook_reply"],
+    "starter": ["instagram_reply", "facebook_reply", "content_publish"],
     "pro": [
         "instagram_reply",
-        "tiktok_reply",
         "facebook_reply",
-        "whatsapp_reply",
         "content_publish",
         "product_discovery",
         "sales_conversion",
         "analytics",
         "lead_classification",
+        "shopify_import",
     ],
     "enterprise": ["*"],
 }

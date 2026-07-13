@@ -99,6 +99,17 @@ FASE 4 — SAAS LAYER
     [ ] Super Admin panel: list tenant, usage, health sistem
     [ ] WebSocket untuk Inbox (ganti polling 10 detik)
     [ ] Monitoring dasar (error rate, queue depth)
+
+  FASE 5a — Shopify Integration
+    [ ] Shopify OAuth flow (connect store)
+    [ ] Product fetch dari Shopify Admin API
+    [ ] Auto-import + embedding untuk RAG
+    [ ] Manual + scheduled sync
+    [ ] UI: Shopify connect card + import trigger
+
+  FASE 5b — Platform Expansion
+    [ ] WhatsApp Business integration
+    [ ] TikTok integration
 ```
 
 ---
@@ -980,8 +991,15 @@ system_logs (
 ### Fase 4 — SaaS Layer
 > Subscription & billing (Midtrans/Stripe), usage metering, quota enforcement, Super Admin panel.
 
-### Fase 5 — Ekspansi (Opsional, post-launch)
-> Berdasarkan feedback pengguna — misalnya: platform tambahan (IG DM, WhatsApp), analytics lebih dalam, atau fitur lain yang terbukti dibutuhkan pasar.
+### Fase 5 — Ekspansi
+> Fase 5a: Shopify product import (otomatisasi katalog produk).
+> Fase 5b: Platform tambahan — WhatsApp Business, TikTok.
+> Berdasarkan feedback pengguna — misalnya: analytics lebih dalam, atau fitur lain yang terbukti dibutuhkan pasar.
+
+**Current scope (v1.0):**
+- Chat channels: Facebook Messenger (DM) + Facebook Page Comments + Instagram DM
+- Product import: manual (v1.0), Shopify (Phase 5a)
+- Billing: Stripe
 
 ---
 
@@ -1117,11 +1135,12 @@ class FeatureStatus(str, Enum):
     DISABLED_BY_USER = "disabled_by_user"
 
 PLAN_FEATURES = {
-    "free":       ["instagram_reply"],
-    "starter":    ["instagram_reply", "tiktok_reply", "content_publish"],
-    "pro":        ["instagram_reply", "tiktok_reply", "facebook_reply",
-                   "whatsapp_reply", "content_publish",
-                   "product_discovery", "sales_conversion", "analytics"],
+    "free":       ["instagram_reply", "facebook_reply"],
+    "starter":    ["instagram_reply", "facebook_reply", "content_publish"],
+    "pro":        ["instagram_reply", "facebook_reply",
+                   "content_publish",
+                   "product_discovery", "sales_conversion", "analytics",
+                   "shopify_import"],
     "enterprise": ["*"],
 }
 

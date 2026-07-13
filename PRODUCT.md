@@ -10,7 +10,17 @@ Pemilik toko online UMKM Indonesia — solo operator yang mengelola percakapan d
 
 ## Product Purpose
 
-Dashboard AI yang membantu reseller UMKM Indonesia mengotomasi respons percakapan di Facebook/Instagram Messenger. AI menjawab pertanyaan produk dan mengklasifikasi intent pembeli; operator bisa takeover kapan saja. Sukses = operator tidak ketinggalan satu pun lead panas, tanpa harus online 24 jam.
+Dashboard AI yang membantu reseller UMKM Indonesia mengotomasi respons percakapan di Facebook Messenger dan Instagram DM. AI menjawab pertanyaan produk dan mengklasifikasi intent pembeli; operator bisa takeover kapan saja. Sukses = operator tidak ketinggalan satu pun lead panas, tanpa harus online 24 jam.
+
+### Supported Channels (v1.0)
+- Facebook Messenger (DM)
+- Facebook Page Comments
+- Instagram DM
+
+### Coming Soon
+- WhatsApp Business
+- TikTok
+- Shopify product import
 
 ## Brand Personality
 

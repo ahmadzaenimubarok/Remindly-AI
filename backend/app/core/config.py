@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     WHATSAPP_TOKEN: str = ""
     WHATSAPP_PHONE_NUMBER_ID: str = ""
 
+    # Shopify
+    SHOPIFY_API_KEY: str = ""
+    SHOPIFY_API_SECRET: str = ""
+    SHOPIFY_REDIRECT_URI: str = ""  # Backend callback URL, e.g. http://localhost:8000/api/v1/auth/shopify/callback
+
     # Midtrans
     MIDTRANS_SERVER_KEY: str = ""
     MIDTRANS_CLIENT_KEY: str = ""
