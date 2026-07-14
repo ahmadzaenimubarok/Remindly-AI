@@ -20,6 +20,8 @@ Dashboard AI yang membantu reseller UMKM Indonesia mengotomasi respons percakapa
 ### Coming Soon
 - WhatsApp Business
 - TikTok
+
+### Live Integrations
 - Shopify product import
 
 ## Brand Personality

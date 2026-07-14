@@ -11,7 +11,7 @@ AI-powered customer engagement platform for Indonesian UMKM resellers. Automates
 | Instagram DM | ✅ Live |
 | WhatsApp Business | 🔜 Coming Soon |
 | TikTok | 🔜 Coming Soon |
-| Shopify (Product Import) | 🔜 Coming Soon |
+| Shopify (Product Import) | ✅ Live |
 
 ## Tech Stack
 
@@ -328,7 +328,7 @@ docs/
 
 | Integration | Status | Plan Document |
 |-------------|--------|---------------|
-| Shopify product import | Planning | `docs/superpowers/plans/2026-07-13-shopify-product-integration.md` |
+| Shopify product import | ✅ Live | `docs/superpowers/plans/2026-07-13-shopify-product-integration.md` |
 | WhatsApp Business | Planned | — |
 | TikTok | Planned | — |
 

@@ -28,11 +28,15 @@ async def test_get_settings_status_no_credential():
     ig_cred_result = MagicMock()
     ig_cred_result.scalar_one_or_none.return_value = None
 
-    db.execute.side_effect = [cred_result, ig_cred_result, count_result]
+    shopify_cred_result = MagicMock()
+    shopify_cred_result.scalar_one_or_none.return_value = None
+
+    db.execute.side_effect = [cred_result, ig_cred_result, shopify_cred_result, count_result]
 
     status = await get_settings_status(tenant_id, db)
     assert status["facebook_connected"] is False
     assert status["instagram_connected"] is False
+    assert status["shopify_connected"] is False
     assert status["product_count"] == 0
 
 
@@ -52,11 +56,15 @@ async def test_get_settings_status_with_credential():
     ig_cred_result = MagicMock()
     ig_cred_result.scalar_one_or_none.return_value = None
 
-    db.execute.side_effect = [cred_result, ig_cred_result, count_result]
+    shopify_cred_result = MagicMock()
+    shopify_cred_result.scalar_one_or_none.return_value = None
+
+    db.execute.side_effect = [cred_result, ig_cred_result, shopify_cred_result, count_result]
 
     status = await get_settings_status(tenant_id, db)
     assert status["facebook_connected"] is True
     assert status["instagram_connected"] is False
+    assert status["shopify_connected"] is False
     assert status["product_count"] == 3
 
 
@@ -110,11 +118,15 @@ async def test_get_settings_status_includes_instagram_connected():
     count_result = MagicMock()
     count_result.scalar.return_value = 2
 
-    db.execute.side_effect = [fb_cred_result, ig_cred_result, count_result]
+    shopify_cred_result = MagicMock()
+    shopify_cred_result.scalar_one_or_none.return_value = None
+
+    db.execute.side_effect = [fb_cred_result, ig_cred_result, shopify_cred_result, count_result]
 
     status = await get_settings_status(tenant_id, db)
     assert status["instagram_connected"] is True
     assert status["facebook_connected"] is False
+    assert status["shopify_connected"] is False
     assert status["product_count"] == 2
 
 

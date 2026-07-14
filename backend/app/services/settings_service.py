@@ -30,6 +30,15 @@ async def get_settings_status(tenant_id: str, db: AsyncSession) -> dict:
     ig_cred = ig_result.scalar_one_or_none()
     instagram_connected = ig_cred is not None and not ig_cred.is_expired()
 
+    shopify_result = await db.execute(
+        select(TenantCredential).where(
+            TenantCredential.tenant_id == uuid.UUID(tenant_id),
+            TenantCredential.platform == "shopify",
+        )
+    )
+    shopify_cred = shopify_result.scalar_one_or_none()
+    shopify_connected = shopify_cred is not None
+
     count_result = await db.execute(
         select(func.count()).select_from(Product).where(
             Product.tenant_id == uuid.UUID(tenant_id),
@@ -41,6 +50,7 @@ async def get_settings_status(tenant_id: str, db: AsyncSession) -> dict:
     return {
         "facebook_connected": facebook_connected,
         "instagram_connected": instagram_connected,
+        "shopify_connected": shopify_connected,
         "product_count": product_count,
     }
 

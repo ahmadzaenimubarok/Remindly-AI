@@ -82,16 +82,50 @@ export default function Settings() {
           )}
         </div>
 
+        {/* Shopify Card */}
+        <div className="mt-4 rounded-lg border bg-white p-5 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-medium text-slate-800">Shopify</h2>
+            {!isLoading && (
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                  status?.shopify_connected
+                    ? "bg-green-100 text-green-700"
+                    : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                {status?.shopify_connected ? "Terhubung" : "Belum terhubung"}
+              </span>
+            )}
+          </div>
+
+          <p className="mb-4 text-sm text-slate-500">
+            Hubungkan Shopify untuk mengimpor produk secara otomatis.
+          </p>
+
+          {status?.shopify_connected ? (
+            <div className="space-y-3">
+              <p className="text-sm text-green-600">✓ Shopify terhubung</p>
+              <Button variant="outline" size="sm" onClick={() => navigate("/auth/shopify/connect")}>
+                Hubungkan Toko Lain
+              </Button>
+            </div>
+          ) : (
+            <Button onClick={() => navigate("/auth/shopify/connect")} size="sm">
+              Connect Shopify
+            </Button>
+          )}
+        </div>
+
         {/* Coming Soon */}
         <div className="mt-6">
           <p className="mb-3 text-xs font-medium uppercase tracking-widest text-slate-400">
             Coming Soon
           </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[
               { name: "WhatsApp Business", desc: "Auto-reply WhatsApp DM" },
               { name: "TikTok", desc: "Auto-reply TikTok comments & DMs" },
-              { name: "Shopify", desc: "Import produk dari Shopify toko Anda" },
             ].map((item) => (
               <div
                 key={item.name}

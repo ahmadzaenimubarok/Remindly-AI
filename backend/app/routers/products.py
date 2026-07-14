@@ -7,9 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db_session
 from app.schemas.base import APIResponse
 from app.schemas.product import CreateProductRequest, ProductResponse, UpdateProductRequest
+from app.schemas.shopify import ShopifyImportResponse
 from app.services.product_service import (
     create_product,
     delete_product,
+    import_from_shopify,
     list_products,
     update_product,
 )
@@ -65,3 +67,23 @@ async def delete_product_endpoint(
     if not deleted:
         raise HTTPException(status_code=404, detail="Produk tidak ditemukan.")
     return APIResponse(data=None, message="Produk berhasil dihapus.")
+
+
+@router.post("/shopify/import", response_model=APIResponse[ShopifyImportResponse])
+async def shopify_import_endpoint(
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Import produk dari Shopify ke database."""
+    tenant_id: str = request.state.tenant_id
+    try:
+        result = await import_from_shopify(tenant_id, db)
+        return APIResponse(
+            data=ShopifyImportResponse(**result),
+            message=f"Import selesai: {result['imported']} produk diimport, {result['updated']} produk diupdate.",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.exception("Shopify import error")
+        raise HTTPException(status_code=500, detail="Gagal import produk dari Shopify.")

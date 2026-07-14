@@ -13,6 +13,8 @@ import FacebookCallback from "@/pages/FacebookCallback";
 import FacebookPages from "@/pages/FacebookPages";
 import InstagramCallback from "@/pages/InstagramCallback";
 import InstagramConnect from "@/pages/InstagramConnect";
+import ShopifyConnect from "@/pages/ShopifyConnect";
+import ShopifyCallback from "@/pages/ShopifyCallback";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isLoading, isAuthenticated } = useAuth();
@@ -103,6 +105,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <InstagramConnect />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/auth/shopify/connect"
+        element={
+          <ProtectedRoute>
+            <ShopifyConnect />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/auth/shopify/callback"
+        element={
+          <ProtectedRoute>
+            <ShopifyCallback />
           </ProtectedRoute>
         }
       />

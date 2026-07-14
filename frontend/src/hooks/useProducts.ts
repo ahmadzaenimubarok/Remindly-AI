@@ -9,6 +9,9 @@ export interface ProductResponse {
   base_price: string | null;
   affiliate_link: string | null;
   status: string;
+  source: string;
+  shopify_product_id: string | null;
+  shopify_synced_at: string | null;
 }
 
 export interface CreateProductPayload {

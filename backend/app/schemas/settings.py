@@ -14,4 +14,5 @@ class SaveIGTokenRequest(BaseModel):
 class SettingsResponse(BaseModel):
     facebook_connected: bool
     instagram_connected: bool
+    shopify_connected: bool = False
     product_count: int

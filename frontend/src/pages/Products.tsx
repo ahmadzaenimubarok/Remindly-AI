@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useProducts, type CreateProductPayload } from "@/hooks/useProducts";
+import { useShopifyImport } from "@/hooks/useShopifyImport";
+import { useSettings } from "@/hooks/useSettings";
 import AppLayout from "@/components/AppLayout";
 
 function formatPrice(price: string | null) {
@@ -12,10 +14,13 @@ function formatPrice(price: string | null) {
 
 export default function Products() {
   const { products, isLoading, error, addProduct, deleteProduct } = useProducts();
+  const { importFromShopify, isImporting } = useShopifyImport();
+  const { status } = useSettings();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<CreateProductPayload>({ name: "" });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,15 +41,45 @@ export default function Products() {
     }
   }
 
+  async function handleShopifyImport() {
+    setImportResult(null);
+    const result = await importFromShopify();
+    if (result) {
+      setImportResult(
+        `Import selesai: ${result.imported} produk diimport, ${result.updated} produk diupdate.`
+      );
+      // Refresh product list
+      window.location.reload();
+    }
+  }
+
   return (
     <AppLayout>
       <div className="mx-auto max-w-3xl p-6">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-xl font-semibold text-slate-900">Produk</h1>
-          <Button onClick={() => setShowForm((v) => !v)} size="sm">
-            {showForm ? "Batal" : "+ Tambah Produk"}
-          </Button>
+          <div className="flex gap-2">
+            {status?.shopify_connected && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleShopifyImport}
+                disabled={isImporting}
+              >
+                {isImporting ? "Mengimport..." : "Import dari Shopify"}
+              </Button>
+            )}
+            <Button onClick={() => setShowForm((v) => !v)} size="sm">
+              {showForm ? "Batal" : "+ Tambah Produk"}
+            </Button>
+          </div>
         </div>
+
+        {importResult && (
+          <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+            {importResult}
+          </div>
+        )}
 
         {showForm && (
           <form
@@ -119,7 +154,23 @@ export default function Products() {
               className="flex items-start justify-between gap-3 rounded-lg border bg-white p-4 shadow-sm"
             >
               <div className="min-w-0">
-                <p className="font-medium text-slate-900 truncate">{p.name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-slate-900 truncate">{p.name}</p>
+                  {p.source === "shopify" && (
+                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                      Shopify
+                    </span>
+                  )}
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                      p.status === "active"
+                        ? "bg-green-100 text-green-700"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {p.status === "active" ? "Aktif" : "Nonaktif"}
+                  </span>
+                </div>
                 {p.description && (
                   <p className="text-sm text-slate-500 mt-0.5 truncate">{p.description}</p>
                 )}

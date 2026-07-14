@@ -1,7 +1,8 @@
 import uuid
+from datetime import datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import ForeignKey, Numeric, String, Text
+from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -28,3 +29,8 @@ class Product(Base, TimestampMixin):
     affiliate_link: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    
+    # Shopify fields
+    shopify_product_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    shopify_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    source: Mapped[str] = mapped_column(String(20), default="manual", nullable=False)

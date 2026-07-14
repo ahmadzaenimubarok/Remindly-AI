@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, Field
@@ -36,5 +37,8 @@ class ProductResponse(BaseModel):
     supplier_link: str | None
     margin_estimate: Decimal | None
     status: str
+    shopify_product_id: str | None = None
+    shopify_synced_at: datetime | None = None
+    source: str = "manual"
 
     model_config = {"from_attributes": True}

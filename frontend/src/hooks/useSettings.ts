@@ -4,6 +4,7 @@ import api from "@/lib/api";
 export interface SettingsStatus {
   facebook_connected: boolean;
   instagram_connected: boolean;
+  shopify_connected: boolean;
   product_count: number;
 }
 
